@@ -31,4 +31,15 @@ build/
 
 ### VS Code ###
 .vscode/
-.idea/
+
+### OS Files ###
+.DS_Store
+Thumbs.db
+
+### Log Files ###
+*.log
+
+### Environment Variables ###
+.env
+.env.*
+
