@@ -12,12 +12,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import static com.gongxifacai.gongxifacai.common.CommonErrorCode.BAD_REQUEST;
 
 /**
- * 全局异常处理器
- * 所有的异常在这里返回
- * 我来维护（或者AI），只需要知道会所有错误只会返回Result.error，完全不用细看
+ * 全局业务异常处理器
+ * 所有的业务异常在这里拦截并包装给前端
+ * 我来维护（或者告诉AI），只需要知道会所有错误只会返回Result.error，完全不用细看
  */
 @Slf4j
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = "com.gongxifacai.gongxifacai")
 public class GlobalExceptionHandler {
 
     /**
