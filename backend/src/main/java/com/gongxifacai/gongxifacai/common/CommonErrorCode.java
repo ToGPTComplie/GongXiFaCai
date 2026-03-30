@@ -11,7 +11,8 @@ public enum CommonErrorCode implements ErrorCode {
     UNAUTHORIZED(401, "未授权或认证失败"),
     FORBIDDEN(403, "没有权限访问"),
     NOT_FOUND(404, "请求的资源不存在"),
-    SYSTEM_ERROR(500, "系统内部繁忙，请稍后再试");
+    SYSTEM_ERROR(500, "系统内部繁忙，请稍后再试"),
+    USER_NOT_FOUND(404, "用户不存在");
 
     private final Integer code;
     private final String message;
