@@ -42,7 +42,6 @@ public class TradeTransaction extends BaseEntity {
     @Column(name = "total_amount", precision = 19, scale = 4, nullable = false)
     private BigDecimal totalAmount;
 
-
     public enum TransactionType {
         BUY, SELL
     }

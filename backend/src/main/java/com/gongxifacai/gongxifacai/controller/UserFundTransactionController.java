@@ -6,15 +6,14 @@ import com.gongxifacai.gongxifacai.dto.PageResponseDTO;
 import com.gongxifacai.gongxifacai.service.FundTransactionService;
 import org.springframework.web.bind.annotation.*;
 
+import lombok.RequiredArgsConstructor;
+
 @RestController
 @RequestMapping("/api/v1/users")
+@RequiredArgsConstructor
 public class UserFundTransactionController {
 
     private final FundTransactionService fundTransactionService;
-
-    public UserFundTransactionController(FundTransactionService fundTransactionService) {
-        this.fundTransactionService = fundTransactionService;
-    }
 
     @GetMapping("/{id}/fund-transactions")
     public Result<PageResponseDTO<FundTransactionResponseDTO>> getFundTransactions(
