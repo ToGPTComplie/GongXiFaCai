@@ -13,6 +13,7 @@ import java.util.List;
 
 import lombok.RequiredArgsConstructor;
 
+import com.gongxifacai.gongxifacai.common.CommonErrorCode;
 import com.gongxifacai.gongxifacai.exception.BusinessException;
 
 @Service
@@ -36,7 +37,7 @@ public class HoldingServiceImpl implements HoldingService {
                 return holding;
             }
         }
-        throw new BusinessException("持仓不存在");
+        throw new BusinessException(CommonErrorCode.NOT_FOUND, "持仓不存在");
     }
 
     @Override
