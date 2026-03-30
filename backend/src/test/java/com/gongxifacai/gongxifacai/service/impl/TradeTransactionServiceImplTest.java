@@ -19,6 +19,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import com.gongxifacai.gongxifacai.service.UserService;
+import com.gongxifacai.gongxifacai.service.HoldingService;
+import com.gongxifacai.gongxifacai.repository.HoldingRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -28,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class TradeTransactionServiceImplTest {
@@ -37,6 +41,15 @@ class TradeTransactionServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private HoldingRepository holdingRepository;
+
+    @Mock
+    private UserService userService;
+
+    @Mock
+    private HoldingService holdingService;
 
     @InjectMocks
     private TradeTransactionServiceImpl tradeTransactionService;
@@ -49,7 +62,7 @@ class TradeTransactionServiceImplTest {
         testUser = new User();
         testUser.setId(1L);
         testUser.setName("Test User");
-        testUser.setAvailableCash(new BigDecimal("1000.00"));
+        testUser.setAvailableCash(new BigDecimal("1000.0000"));
 
         testTransaction = new TradeTransaction();
         testTransaction.setId(200L);
@@ -57,9 +70,9 @@ class TradeTransactionServiceImplTest {
         testTransaction.setTicker("AAPL");
         testTransaction.setAssetType(Holding.AssetType.STOCK);
         testTransaction.setTransactionType(TradeTransaction.TransactionType.BUY);
-        testTransaction.setQuantity(new BigDecimal("10.00"));
-        testTransaction.setPrice(new BigDecimal("150.00"));
-        testTransaction.setTotalAmount(new BigDecimal("1500.00"));
+        testTransaction.setQuantity(new BigDecimal("10.0000"));
+        testTransaction.setPrice(new BigDecimal("150.0000"));
+        testTransaction.setTotalAmount(new BigDecimal("1500.0000"));
         testTransaction.setCreatedAt(LocalDateTime.now());
     }
 
@@ -86,7 +99,7 @@ class TradeTransactionServiceImplTest {
         TradeTransactionResponseDTO dto = response.getContent().get(0);
         assertEquals(testTransaction.getId(), dto.getId());
         assertEquals(testTransaction.getTicker(), dto.getTicker());
-        assertEquals(testTransaction.getTotalAmount(), dto.getTotalAmount());
+        assertEquals(0, testTransaction.getTotalAmount().compareTo(dto.getTotalAmount()));
         assertEquals(testTransaction.getTransactionType(), dto.getTransactionType());
         assertEquals(testTransaction.getAssetType(), dto.getAssetType());
     }
@@ -103,5 +116,136 @@ class TradeTransactionServiceImplTest {
         });
 
         assertEquals(CommonErrorCode.NOT_FOUND.getCode(), exception.getCode());
+    }
+
+    @Test
+    void processTrade_Buy_Success() {
+        Long userId = 1L;
+        String ticker = "AAPL";
+        BigDecimal quantity = new BigDecimal("10.0000");
+        BigDecimal price = new BigDecimal("50.0000");
+        BigDecimal totalAmount = new BigDecimal("500.0000");
+
+        Holding testHolding = new Holding();
+        testHolding.setId(10L);
+        testHolding.setUser(testUser);
+        testHolding.setTicker(ticker);
+        testHolding.setAssetType(Holding.AssetType.STOCK);
+        testHolding.setQuantity(new BigDecimal("5.0000"));
+        testHolding.setAverageCost(new BigDecimal("40.0000"));
+
+        when(userService.getUser(userId)).thenReturn(testUser);
+        when(holdingService.getOrCreateHolding(userId, ticker, Holding.AssetType.STOCK)).thenReturn(testHolding);
+        when(tradeTransactionRepository.save(any(TradeTransaction.class))).thenAnswer(i -> i.getArguments()[0]);
+
+        TradeTransaction result = tradeTransactionService.processTrade(userId, ticker, Holding.AssetType.STOCK, TradeTransaction.TransactionType.BUY, quantity, price);
+
+        assertNotNull(result);
+        assertEquals(0, new BigDecimal("500.0000").compareTo(testUser.getAvailableCash())); // 1000 - 500
+        assertEquals(0, new BigDecimal("15.0000").compareTo(testHolding.getQuantity())); // 5 + 10
+        // New cost = ((5 * 40) + 500) / 15 = 700 / 15 = 46.6667
+        assertEquals(0, new BigDecimal("46.6667").compareTo(testHolding.getAverageCost()));
+
+        assertEquals(TradeTransaction.TransactionType.BUY, result.getTransactionType());
+        assertEquals(0, totalAmount.compareTo(result.getTotalAmount()));
+        assertEquals(0, quantity.compareTo(result.getQuantity()));
+        assertEquals(0, price.compareTo(result.getPrice()));
+
+        verify(userRepository).save(testUser);
+        verify(holdingRepository).save(testHolding);
+        verify(tradeTransactionRepository).save(any(TradeTransaction.class));
+    }
+
+    @Test
+    void processTrade_Sell_Success() {
+        Long userId = 1L;
+        String ticker = "AAPL";
+        BigDecimal quantity = new BigDecimal("10.0000");
+        BigDecimal price = new BigDecimal("150.0000");
+        BigDecimal totalAmount = new BigDecimal("1500.0000");
+
+        Holding testHolding = new Holding();
+        testHolding.setId(10L);
+        testHolding.setUser(testUser);
+        testHolding.setTicker(ticker);
+        testHolding.setAssetType(Holding.AssetType.STOCK);
+        testHolding.setQuantity(new BigDecimal("15.0000"));
+        testHolding.setAverageCost(new BigDecimal("100.0000"));
+
+        when(userService.getUser(userId)).thenReturn(testUser);
+        when(holdingService.getHolding(userId, ticker)).thenReturn(testHolding);
+        when(tradeTransactionRepository.save(any(TradeTransaction.class))).thenAnswer(i -> i.getArguments()[0]);
+
+        TradeTransaction result = tradeTransactionService.processTrade(userId, ticker, Holding.AssetType.STOCK, TradeTransaction.TransactionType.SELL, quantity, price);
+
+        assertNotNull(result);
+        assertEquals(0, new BigDecimal("2500.0000").compareTo(testUser.getAvailableCash())); // 1000 + 1500
+        assertEquals(0, new BigDecimal("5.0000").compareTo(testHolding.getQuantity())); // 15 - 10
+        assertEquals(0, new BigDecimal("100.0000").compareTo(testHolding.getAverageCost())); // Unchanged
+
+        assertEquals(TradeTransaction.TransactionType.SELL, result.getTransactionType());
+        assertEquals(0, totalAmount.compareTo(result.getTotalAmount()));
+        assertEquals(0, quantity.compareTo(result.getQuantity()));
+        assertEquals(0, price.compareTo(result.getPrice()));
+
+        verify(userRepository).save(testUser);
+        verify(holdingRepository).save(testHolding);
+        verify(tradeTransactionRepository).save(any(TradeTransaction.class));
+    }
+
+    @Test
+    void processTrade_InvalidQuantityOrPrice() {
+        Long userId = 1L;
+
+        BusinessException exception1 = assertThrows(BusinessException.class, () -> {
+            tradeTransactionService.processTrade(userId, "AAPL", Holding.AssetType.STOCK, TradeTransaction.TransactionType.BUY, BigDecimal.ZERO, new BigDecimal("100.0000"));
+        });
+        assertEquals(CommonErrorCode.BAD_REQUEST.getCode(), exception1.getCode());
+
+        BusinessException exception2 = assertThrows(BusinessException.class, () -> {
+            tradeTransactionService.processTrade(userId, "AAPL", Holding.AssetType.STOCK, TradeTransaction.TransactionType.BUY, new BigDecimal("10.0000"), BigDecimal.ZERO);
+        });
+        assertEquals(CommonErrorCode.BAD_REQUEST.getCode(), exception2.getCode());
+    }
+
+    @Test
+    void processTrade_Buy_InsufficientBalance() {
+        Long userId = 1L;
+        String ticker = "AAPL";
+        BigDecimal quantity = new BigDecimal("10.0000");
+        BigDecimal price = new BigDecimal("150.0000"); // 1500 total, but user only has 1000
+
+        when(userService.getUser(userId)).thenReturn(testUser);
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> {
+            tradeTransactionService.processTrade(userId, ticker, Holding.AssetType.STOCK, TradeTransaction.TransactionType.BUY, quantity, price);
+        });
+
+        assertEquals("余额不足", exception.getMessage());
+    }
+
+    @Test
+    void processTrade_Sell_InsufficientHolding() {
+        Long userId = 1L;
+        String ticker = "AAPL";
+        BigDecimal quantity = new BigDecimal("20.0000");
+        BigDecimal price = new BigDecimal("150.0000");
+
+        Holding testHolding = new Holding();
+        testHolding.setId(10L);
+        testHolding.setUser(testUser);
+        testHolding.setTicker(ticker);
+        testHolding.setAssetType(Holding.AssetType.STOCK);
+        testHolding.setQuantity(new BigDecimal("10.0000")); // only has 10, wants to sell 20
+        testHolding.setAverageCost(new BigDecimal("100.0000"));
+
+        when(userService.getUser(userId)).thenReturn(testUser);
+        when(holdingService.getHolding(userId, ticker)).thenReturn(testHolding);
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> {
+            tradeTransactionService.processTrade(userId, ticker, Holding.AssetType.STOCK, TradeTransaction.TransactionType.SELL, quantity, price);
+        });
+
+        assertEquals("持仓不足", exception.getMessage());
     }
 }
