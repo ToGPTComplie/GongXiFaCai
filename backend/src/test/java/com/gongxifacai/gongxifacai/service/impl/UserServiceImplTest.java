@@ -1,6 +1,8 @@
 package com.gongxifacai.gongxifacai.service.impl;
 
+import com.gongxifacai.gongxifacai.entity.Holding;
 import com.gongxifacai.gongxifacai.entity.User;
+import com.gongxifacai.gongxifacai.repository.HoldingRepository;
 import com.gongxifacai.gongxifacai.exception.BusinessException;
 import com.gongxifacai.gongxifacai.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import static com.gongxifacai.gongxifacai.common.CommonErrorCode.USER_NOT_FOUND;
@@ -23,6 +26,9 @@ class UserServiceImplTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private HoldingRepository holdingRepository;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -84,7 +90,31 @@ class UserServiceImplTest {
         assertNotNull(result);
         assertEquals(1L, result.id());
         assertEquals("TestUser", result.name());
+        assertEquals(new BigDecimal("1000.00"), result.availableCash());
         verify(userRepository, times(1)).findById(1L);
+    }
+
+    @Test
+    void getUserHoldings_Success() {
+        // Arrange
+        Holding holding = new Holding();
+        holding.setUser(mockUser);
+        holding.setTicker("600519");
+        holding.setQuantity(new BigDecimal("10.0000"));
+        holding.setAverageCost(new BigDecimal("100.0000"));
+        List<Holding> holdings = List.of(holding);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(mockUser));
+        when(holdingRepository.findByUserId(1L)).thenReturn(holdings);
+
+        // Act
+        List<Holding> result = userService.getUserHoldings(1L);
+
+        // Assert
+        assertEquals(1, result.size());
+        assertEquals("600519", result.getFirst().getTicker());
+        verify(userRepository, times(1)).findById(1L);
+        verify(holdingRepository, times(1)).findByUserId(1L);
     }
 
     @Test

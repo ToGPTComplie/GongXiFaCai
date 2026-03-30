@@ -1,7 +1,9 @@
 package com.gongxifacai.gongxifacai.service.impl;
 
+import com.gongxifacai.gongxifacai.entity.Holding;
 import com.gongxifacai.gongxifacai.entity.User;
 import com.gongxifacai.gongxifacai.exception.BusinessException;
+import com.gongxifacai.gongxifacai.repository.HoldingRepository;
 import com.gongxifacai.gongxifacai.repository.UserRepository;
 import com.gongxifacai.gongxifacai.service.UserService;
 
@@ -10,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static com.gongxifacai.gongxifacai.common.CommonErrorCode.USER_NOT_FOUND;
 
@@ -17,11 +20,19 @@ import static com.gongxifacai.gongxifacai.common.CommonErrorCode.USER_NOT_FOUND;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
+    private final HoldingRepository holdingRepository;
     private final UserRepository userRepository;
 
     @Override
     public UserInfo getUserInfo(Long userId) {
+
         return UserInfo.fromEntity(getUser(userId));
+    }
+
+    @Override
+    public List<Holding> getUserHoldings(Long userId) {
+        getUser(userId);
+        return holdingRepository.findByUserId(userId);
     }
 
     @Override
@@ -51,9 +62,10 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
-    public record UserInfo(Long id, String name){
+    public record UserInfo(Long id, String name, BigDecimal availableCash){
         public static UserInfo fromEntity(User user) {
-            return new UserInfo(user.getId(), user.getName());
+
+            return new UserInfo(user.getId(), user.getName(), user.getAvailableCash());
         }
     }
 }
