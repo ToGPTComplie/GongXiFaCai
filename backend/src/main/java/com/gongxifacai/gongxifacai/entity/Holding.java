@@ -28,7 +28,7 @@ public class Holding extends BaseEntity {
     @Column(name = "asset_type", nullable = false)
     private AssetType assetType;
 
-    // 持仓数量
+    // 当前持仓数量
     @Column(name = "quantity", precision = 19, scale = 4, nullable = false)
     private BigDecimal quantity;
 
