@@ -1,11 +1,12 @@
 package com.gongxifacai.gongxifacai.exception;
 
-import com.gongxifacai.gongxifacai.common.CommonErrorCode;
 import com.gongxifacai.gongxifacai.common.Result;
 import org.junit.jupiter.api.Test;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -38,13 +39,13 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void testHandleValidationException() {
-        // 模拟参数校验异常 (如 Hibernate Validator 的 @NotNull 触发)
+        // 参数校验异常 (如 Hibernate Validator 的 @NotNull 触发)
         MethodArgumentNotValidException ex = mock(MethodArgumentNotValidException.class);
         BindingResult bindingResult = mock(BindingResult.class);
         FieldError fieldError = new FieldError("objectName", "fieldName", "参数不能为null");
 
         when(ex.getBindingResult()).thenReturn(bindingResult);
-        when(bindingResult.getFieldError()).thenReturn(fieldError);
+        when(Objects.requireNonNull(bindingResult.getFieldError())).thenReturn(fieldError);
 
         Result<Void> result = handler.handleValidationException(ex);
 
