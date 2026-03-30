@@ -22,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
 
 import lombok.RequiredArgsConstructor;
 
@@ -60,7 +59,7 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
 
         BigDecimal totalAmount = quantity.multiply(price);
 
-        Holding holding = null;
+        Holding holding;
 
         if(transactionType == TradeTransaction.TransactionType.BUY){
 
