@@ -1,144 +1,92 @@
 package com.gongxifacai.gongxifacai.controller;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gongxifacai.gongxifacai.common.CommonErrorCode;
 import com.gongxifacai.gongxifacai.common.Result;
+import com.gongxifacai.gongxifacai.dto.HoldingDTO;
+import com.gongxifacai.gongxifacai.dto.KLineCandleDTO;
 import com.gongxifacai.gongxifacai.entity.Holding;
 import com.gongxifacai.gongxifacai.exception.BusinessException;
+import com.gongxifacai.gongxifacai.service.HoldingService;
 import com.gongxifacai.gongxifacai.service.UserService;
 import com.gongxifacai.gongxifacai.dto.UserInfo;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.math.BigDecimal;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+
 
 @RestController
 public class UserController {
-    private static final String API_KEY = "2FSNJP54LS7YWX1D";
-    private static final long PRICE_CACHE_TTL_MILLIS = 60_000L;
-
-    private static final List<String> DEFAULT_PORTFOLIO_SYMBOLS = List.of(
-              "MSFT"
-    );
+    // 这就是你问的 base-url
+    public static final String BASE_URL = "https://query1.finance.yahoo.com";
 
     @Autowired
     private UserService userService;
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final Map<String, CachedPrice> priceCache = new ConcurrentHashMap<>();
-
+    @Autowired
+    private HoldingService holdingService;
     @GetMapping("/api/v1/users/{id}")
     public Result<UserInfo> getUserInfo(@PathVariable Long id) {
         return Result.success(userService.getUserInfo(id));
     }
-
-    @GetMapping("/api/v1/users/{id}/holdings")
-    public Result<List<HoldingValuation>> getUserHoldings(@PathVariable Long id) {
-        List<Holding> holdings = userService.getUserHoldings(id);
-        List<HoldingValuation> data = holdings.stream().map(this::toHoldingValuation).toList();
-        return Result.success(data);
-    }
-
-    @GetMapping("/portfolio-data")
-    public Result<List<JsonNode>> getPortfolioData() {
-        List<JsonNode> data = new ArrayList<>(DEFAULT_PORTFOLIO_SYMBOLS.size());
-        for (String symbol : DEFAULT_PORTFOLIO_SYMBOLS) {
-            data.add(fetchGlobalQuoteFromAlphaVantage(symbol));
-        }
-        return Result.success(data);
-    }
-
-    private HoldingValuation toHoldingValuation(Holding holding) {
-        BigDecimal currentPrice = getCurrentPrice(holding.getTicker());
-        BigDecimal quantity = holding.getQuantity();
-        BigDecimal averageCost = holding.getAverageCost();
-        BigDecimal marketValue = currentPrice.multiply(quantity);
-        BigDecimal profitLoss = currentPrice.subtract(averageCost).multiply(quantity);
-
-        return new HoldingValuation(
-                holding.getTicker(),
-                quantity,
-                averageCost,
-                currentPrice,
-                marketValue,
-                profitLoss
-        );
-    }
-
-    protected BigDecimal getCurrentPrice(String symbol) {
-        long now = System.currentTimeMillis();
-        CachedPrice cached = priceCache.get(symbol);
-        if (cached != null && now - cached.fetchedAtMillis() < PRICE_CACHE_TTL_MILLIS) {
-            return cached.price();
-        }
-
-        BigDecimal latestPrice = fetchLatestPriceFromAlphaVantage(symbol);
-        priceCache.put(symbol, new CachedPrice(latestPrice, now));
-        return latestPrice;
-    }
-
-    protected BigDecimal fetchLatestPriceFromAlphaVantage(String symbol) {
-        JsonNode quote = fetchGlobalQuoteFromAlphaVantage(symbol);
-        Object price = quote.get("05. price");
-        if (price == null || price.toString().isBlank()) {
-            throw new BusinessException(CommonErrorCode.SYSTEM_ERROR, "行情数据为空: " + symbol);
-        }
-        return new BigDecimal(price.toString());
-    }
-
-    protected JsonNode fetchGlobalQuoteFromAlphaVantage(String symbol) {
-        String urlStr = "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=" + symbol + "&apikey=" + API_KEY;
-        System.out.println(urlStr);
+    @GetMapping("test")
+    public void getProtofeil  () throws IOException, InterruptedException {
+        String ticker="AAPL";
         try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
-            conn.setRequestMethod("GET");
-            conn.setRequestProperty("Accept", "application/json");
+            String url = BASE_URL + "/v8/finance/chart/" + ticker + "?interval=1d&range=1d";
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("User-Agent", "Mozilla/5.0")
+                    .build();
 
-            int code = conn.getResponseCode();
-            InputStream is = (code >= 200 && code < 300) ? conn.getInputStream() : conn.getErrorStream();
-            String response;
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-                response = br.lines().collect(Collectors.joining("\n"));
-            } finally {
-                conn.disconnect();
+            HttpResponse<String> response =
+                    HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new BusinessException(CommonErrorCode.SYSTEM_ERROR, "Failed to fetch market price");
             }
 
-            JsonNode quote = objectMapper.readTree(response).path("Global Quote");
-            System.out.println("quote:"+response);
+            JsonObject root = JsonParser.parseString(response.body()).getAsJsonObject();
+            System.out.println(root);
+            JsonObject chart = root.getAsJsonObject("chart");
+            JsonArray result = chart == null ? null : chart.getAsJsonArray("result");
+            if (result == null || result.isEmpty()) {
+                throw new BusinessException(CommonErrorCode.NOT_FOUND, "Market data not found: " + ticker);
+            }
 
-
-            return quote;
-        } catch (IOException e) {
-            throw new BusinessException(CommonErrorCode.SYSTEM_ERROR, "行情服务调用失败: " + e.getMessage());
+            JsonObject first = result.get(0).getAsJsonObject();
+            JsonObject meta = first.getAsJsonObject("meta");
+            JsonElement priceElement = meta == null ? null : meta.get("regularMarketPrice");
+            if (priceElement == null || priceElement.isJsonNull()) {
+                throw new BusinessException(CommonErrorCode.NOT_FOUND, "regularMarketPrice not found: " + ticker);
+            }
+            System.out.println(meta);
+            System.out.println(BigDecimal.valueOf(priceElement.getAsDouble()));
+        } catch (BusinessException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new BusinessException(CommonErrorCode.SYSTEM_ERROR, "Failed to fetch market price");
         }
     }
-
-    private record CachedPrice(BigDecimal price, long fetchedAtMillis) {
+    @GetMapping("/api/v1/users/{id}/holdings")
+    public Result<List<Holding>> getUserHoldings(@PathVariable Long id) {
+        List<Holding> holdings = holdingService.getUserHoldings(id);
+        return Result.success(holdings);
     }
 
-    public record HoldingValuation(
-            String ticker,
-            BigDecimal quantity,
-            BigDecimal averageCost,
-            BigDecimal currentPrice,
-            BigDecimal marketValue,
-            BigDecimal profitLoss
-    ) {
+    @GetMapping("/api/v1/users/{id}/{symbol}")
+    public Result<List<KLineCandleDTO>> getKLineData(@PathVariable Long id, @PathVariable String symbol) {
+        return Result.success(holdingService.getKLineData(id, symbol));
     }
+
 }
