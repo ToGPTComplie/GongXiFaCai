@@ -7,9 +7,7 @@ import com.gongxifacai.gongxifacai.entity.Holding;
 import com.gongxifacai.gongxifacai.entity.TradeTransaction;
 import com.gongxifacai.gongxifacai.entity.User;
 import com.gongxifacai.gongxifacai.exception.BusinessException;
-import com.gongxifacai.gongxifacai.repository.HoldingRepository;
 import com.gongxifacai.gongxifacai.repository.TradeTransactionRepository;
-import com.gongxifacai.gongxifacai.repository.UserRepository;
 import com.gongxifacai.gongxifacai.service.HoldingService;
 import com.gongxifacai.gongxifacai.service.TradeTransactionService;
 import com.gongxifacai.gongxifacai.service.UserService;
@@ -73,7 +71,6 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
             holdingService.applyBuy(userId, ticker, assetType, quantity, totalAmount);
 
         } else if (transactionType == TradeTransaction.TransactionType.SELL) {
-            //持仓不足
 
             BigDecimal balance = user.getAvailableCash().add(totalAmount);
             user.setAvailableCash(balance);

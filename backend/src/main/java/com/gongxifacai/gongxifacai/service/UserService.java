@@ -21,4 +21,6 @@ public interface UserService {
     Boolean existsById(Long userId);
 
     void save(User user);
+
+    User getReferenceById(Long userId);
 }

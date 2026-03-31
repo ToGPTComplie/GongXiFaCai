@@ -39,9 +39,6 @@ class FundTransactionServiceImplTest {
     private FundTransactionRepository fundTransactionRepository;
 
     @Mock
-    private UserRepository userRepository;
-
-    @Mock
     private UserService userService;
 
     @InjectMocks
@@ -75,7 +72,7 @@ class FundTransactionServiceImplTest {
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<FundTransaction> transactionPage = new PageImpl<>(List.of(testTransaction), pageable, 1);
 
-        when(userRepository.existsById(userId)).thenReturn(true);
+        when(userService.existsById(userId)).thenReturn(true);
         when(fundTransactionRepository.findByUser_Id(eq(userId), any(PageRequest.class))).thenReturn(transactionPage);
 
         // Act
@@ -96,7 +93,7 @@ class FundTransactionServiceImplTest {
     void getUserFundTransactions_UserDoesNotExist_ThrowsBusinessException() {
         // Arrange
         Long userId = 999L;
-        when(userRepository.existsById(userId)).thenReturn(false);
+        when(userService.existsById(userId)).thenReturn(false);
 
         // Act & Assert
         BusinessException exception = assertThrows(BusinessException.class, () -> {
@@ -123,7 +120,7 @@ class FundTransactionServiceImplTest {
         assertEquals("Test Deposit", result.getDescription());
         assertEquals(testUser, result.getUser());
 
-        verify(userRepository).save(testUser);
+        verify(userService).save(testUser);
         verify(fundTransactionRepository).save(any(FundTransaction.class));
     }
 
@@ -142,7 +139,7 @@ class FundTransactionServiceImplTest {
         assertEquals(amount, result.getTotalAmount());
         assertEquals(FundTransaction.FundTransactionType.WITHDRAW, result.getTransactionType());
 
-        verify(userRepository).save(testUser);
+        verify(userService).save(testUser);
         verify(fundTransactionRepository).save(any(FundTransaction.class));
     }
 

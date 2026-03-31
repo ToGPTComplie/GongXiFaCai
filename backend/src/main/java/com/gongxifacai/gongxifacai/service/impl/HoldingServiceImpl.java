@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 
 import com.gongxifacai.gongxifacai.common.CommonErrorCode;
 import com.gongxifacai.gongxifacai.exception.BusinessException;
+import com.gongxifacai.gongxifacai.service.UserService;
 import com.gongxifacai.gongxifacai.util.BigDecimalUtil;
 
 @Service
@@ -23,7 +24,7 @@ import com.gongxifacai.gongxifacai.util.BigDecimalUtil;
 public class HoldingServiceImpl implements HoldingService {
 
     private final HoldingRepository holdingRepository;
-    private final UserRepository userRepository;
+    private final UserService userService;
 
     @Override
     public List<Holding> getUserHoldings(Long userId) {
@@ -55,7 +56,7 @@ public class HoldingServiceImpl implements HoldingService {
 
         Holding holding = new Holding();
 
-        holding.setUser(userRepository.getReferenceById(userId));
+        holding.setUser(userService.getReferenceById(userId));
         holding.setTicker(ticker);
         holding.setAssetType(assetType);
         holding.setQuantity(BigDecimal.ZERO);
@@ -89,6 +90,7 @@ public class HoldingServiceImpl implements HoldingService {
         BigDecimal oldQuantity = holding.getQuantity();
         BigDecimal newQuantity = oldQuantity.subtract(quantity);
 
+        // 持仓不足
         if (BigDecimalUtil.isLessThanZero(newQuantity)) {
             throw new BusinessException("持仓不足");
         }

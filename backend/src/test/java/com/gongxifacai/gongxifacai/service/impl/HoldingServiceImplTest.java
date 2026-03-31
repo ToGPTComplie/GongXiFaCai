@@ -5,6 +5,8 @@ import com.gongxifacai.gongxifacai.entity.User;
 import com.gongxifacai.gongxifacai.exception.BusinessException;
 import com.gongxifacai.gongxifacai.repository.HoldingRepository;
 import com.gongxifacai.gongxifacai.repository.UserRepository;
+import com.gongxifacai.gongxifacai.service.UserService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,7 +30,7 @@ class HoldingServiceImplTest {
     private HoldingRepository holdingRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private UserService userService;
 
     @InjectMocks
     private HoldingServiceImpl holdingService;
@@ -105,7 +107,7 @@ class HoldingServiceImplTest {
         // Assert
         assertNotNull(result);
         assertEquals(existingHolding.getId(), result.getId());
-        verify(userRepository, never()).getReferenceById(any());
+        verify(userService, never()).getReferenceById(any());
         verify(holdingRepository, never()).save(any());
     }
 
@@ -113,11 +115,11 @@ class HoldingServiceImplTest {
     void getOrCreateHolding_WhenNotExists_ShouldCreateAndSaveNewHolding() {
         // Arrange
         when(holdingRepository.findByUserId(userId)).thenReturn(Collections.emptyList());
-        
+
         User proxyUser = new User();
         proxyUser.setId(userId);
-        when(userRepository.getReferenceById(userId)).thenReturn(proxyUser);
-        
+        when(userService.getReferenceById(userId)).thenReturn(proxyUser);
+
         when(holdingRepository.save(any(Holding.class))).thenAnswer(invocation -> {
             Holding saved = invocation.getArgument(0);
             saved.setId(200L);
@@ -135,8 +137,8 @@ class HoldingServiceImplTest {
         assertEquals(BigDecimal.ZERO, result.getQuantity());
         assertEquals(BigDecimal.ZERO, result.getAverageCost());
         assertEquals(userId, result.getUser().getId());
-        
-        verify(userRepository, times(1)).getReferenceById(userId);
+
+        verify(userService, times(1)).getReferenceById(userId);
         verify(holdingRepository, times(1)).save(any(Holding.class));
     }
 }

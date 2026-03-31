@@ -25,12 +25,11 @@ import lombok.RequiredArgsConstructor;
 public class FundTransactionServiceImpl implements FundTransactionService {
 
     private final FundTransactionRepository fundTransactionRepository;
-    private final UserRepository userRepository;
     private final UserService userService;
 
     @Override
     public PageResponseDTO<FundTransactionResponseDTO> getUserFundTransactions(Long userId, int page, int size) {
-        if (!userRepository.existsById(userId)) {
+        if (!userService.existsById(userId)) {
             throw new BusinessException(CommonErrorCode.NOT_FOUND);
         }
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
@@ -61,7 +60,7 @@ public class FundTransactionServiceImpl implements FundTransactionService {
             throw new BusinessException("未知的交易类型");
         }
 
-        userRepository.save(user);
+        userService.save(user);
 
         FundTransaction transaction = new FundTransaction();
         transaction.setUser(user);
