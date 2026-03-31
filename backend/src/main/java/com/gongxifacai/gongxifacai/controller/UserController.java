@@ -3,7 +3,7 @@ package com.gongxifacai.gongxifacai.controller;
 import com.gongxifacai.gongxifacai.common.Result;
 import com.gongxifacai.gongxifacai.entity.Holding;
 import com.gongxifacai.gongxifacai.service.UserService;
-import com.gongxifacai.gongxifacai.service.impl.UserServiceImpl.UserInfo;
+import com.gongxifacai.gongxifacai.dto.UserInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

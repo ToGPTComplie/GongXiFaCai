@@ -1,6 +1,7 @@
 package com.gongxifacai.gongxifacai.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.DecimalMin;
 import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
@@ -19,6 +20,7 @@ public class FundTransaction extends BaseEntity {
     @Column(name = "transaction_type", nullable = false)
     private FundTransactionType transactionType;
 
+    @DecimalMin(value = "0.0", message = "总金额必须大于等于0")
     @Column(name = "total_amount", precision = 19, scale = 4, nullable = false)
     private BigDecimal totalAmount;
 

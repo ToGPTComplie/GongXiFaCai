@@ -8,6 +8,8 @@ import com.gongxifacai.gongxifacai.entity.User;
 import com.gongxifacai.gongxifacai.exception.BusinessException;
 import com.gongxifacai.gongxifacai.repository.FundTransactionRepository;
 import com.gongxifacai.gongxifacai.repository.UserRepository;
+import com.gongxifacai.gongxifacai.service.UserService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +29,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 class FundTransactionServiceImplTest {
@@ -35,7 +39,7 @@ class FundTransactionServiceImplTest {
     private FundTransactionRepository fundTransactionRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private UserService userService;
 
     @InjectMocks
     private FundTransactionServiceImpl fundTransactionService;
@@ -68,7 +72,7 @@ class FundTransactionServiceImplTest {
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<FundTransaction> transactionPage = new PageImpl<>(List.of(testTransaction), pageable, 1);
 
-        when(userRepository.existsById(userId)).thenReturn(true);
+        when(userService.existsById(userId)).thenReturn(true);
         when(fundTransactionRepository.findByUser_Id(eq(userId), any(PageRequest.class))).thenReturn(transactionPage);
 
         // Act
@@ -89,7 +93,7 @@ class FundTransactionServiceImplTest {
     void getUserFundTransactions_UserDoesNotExist_ThrowsBusinessException() {
         // Arrange
         Long userId = 999L;
-        when(userRepository.existsById(userId)).thenReturn(false);
+        when(userService.existsById(userId)).thenReturn(false);
 
         // Act & Assert
         BusinessException exception = assertThrows(BusinessException.class, () -> {
@@ -97,5 +101,73 @@ class FundTransactionServiceImplTest {
         });
 
         assertEquals(CommonErrorCode.NOT_FOUND.getCode(), exception.getCode());
+    }
+
+    @Test
+    void processFundTransaction_Deposit_Success() {
+        Long userId = 1L;
+        BigDecimal amount = new BigDecimal("500.00");
+
+        when(userService.getUser(userId)).thenReturn(testUser);
+        when(fundTransactionRepository.save(any(FundTransaction.class))).thenAnswer(i -> i.getArguments()[0]);
+
+        FundTransaction result = fundTransactionService.processFundTransaction(userId, FundTransaction.FundTransactionType.DEPOSIT, amount, "Test Deposit");
+
+        assertNotNull(result);
+        assertEquals(new BigDecimal("1500.00"), testUser.getAvailableCash());
+        assertEquals(amount, result.getTotalAmount());
+        assertEquals(FundTransaction.FundTransactionType.DEPOSIT, result.getTransactionType());
+        assertEquals("Test Deposit", result.getDescription());
+        assertEquals(testUser, result.getUser());
+
+        verify(userService).save(testUser);
+        verify(fundTransactionRepository).save(any(FundTransaction.class));
+    }
+
+    @Test
+    void processFundTransaction_Withdraw_Success() {
+        Long userId = 1L;
+        BigDecimal amount = new BigDecimal("500.00");
+
+        when(userService.getUser(userId)).thenReturn(testUser);
+        when(fundTransactionRepository.save(any(FundTransaction.class))).thenAnswer(i -> i.getArguments()[0]);
+
+        FundTransaction result = fundTransactionService.processFundTransaction(userId, FundTransaction.FundTransactionType.WITHDRAW, amount, "Test Withdraw");
+
+        assertNotNull(result);
+        assertEquals(new BigDecimal("500.00"), testUser.getAvailableCash());
+        assertEquals(amount, result.getTotalAmount());
+        assertEquals(FundTransaction.FundTransactionType.WITHDRAW, result.getTransactionType());
+
+        verify(userService).save(testUser);
+        verify(fundTransactionRepository).save(any(FundTransaction.class));
+    }
+
+    @Test
+    void processFundTransaction_Withdraw_InsufficientBalance() {
+        Long userId = 1L;
+        BigDecimal amount = new BigDecimal("1500.00"); // > 1000.00
+
+        when(userService.getUser(userId)).thenReturn(testUser);
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> {
+            fundTransactionService.processFundTransaction(userId, FundTransaction.FundTransactionType.WITHDRAW, amount, "Test Withdraw");
+        });
+
+        assertEquals(CommonErrorCode.BAD_REQUEST.getCode(), exception.getCode());
+        assertEquals("余额不足", exception.getMessage());
+    }
+
+    @Test
+    void processFundTransaction_InvalidAmount() {
+        Long userId = 1L;
+        BigDecimal amount = new BigDecimal("-100.00");
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> {
+            fundTransactionService.processFundTransaction(userId, FundTransaction.FundTransactionType.DEPOSIT, amount, "Test Deposit");
+        });
+
+        assertEquals(CommonErrorCode.BAD_REQUEST.getCode(), exception.getCode());
+        assertEquals("金额必须大于0", exception.getMessage());
     }
 }
