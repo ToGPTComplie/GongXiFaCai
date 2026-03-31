@@ -9,12 +9,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 import lombok.RequiredArgsConstructor;
 
 import com.gongxifacai.gongxifacai.common.CommonErrorCode;
 import com.gongxifacai.gongxifacai.exception.BusinessException;
+import com.gongxifacai.gongxifacai.util.BigDecimalUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -52,12 +54,46 @@ public class HoldingServiceImpl implements HoldingService {
         }
 
         Holding holding = new Holding();
-        
+
         holding.setUser(userRepository.getReferenceById(userId));
         holding.setTicker(ticker);
         holding.setAssetType(assetType);
         holding.setQuantity(BigDecimal.ZERO);
         holding.setAverageCost(BigDecimal.ZERO);
+        return holdingRepository.save(holding);
+    }
+
+    @Override
+    @Transactional
+    public Holding applyBuy(Long userId, String ticker, Holding.AssetType assetType, BigDecimal quantity, BigDecimal totalAmount) {
+        Holding holding = getOrCreateHolding(userId, ticker, assetType);
+
+        //计算平均持仓成本
+        BigDecimal oldQuantity = holding.getQuantity();
+        BigDecimal newQuantity = oldQuantity.add(quantity);
+        BigDecimal newTotalAmount = holding.getAverageCost().multiply(oldQuantity).add(totalAmount);
+        BigDecimal newAverageCost = newTotalAmount.divide(newQuantity, 4, RoundingMode.HALF_UP);
+
+        holding.setQuantity(newQuantity);
+        holding.setAverageCost(newAverageCost);
+
+        return holdingRepository.save(holding);
+    }
+
+    @Override
+    @Transactional
+    public Holding applySell(Long userId, String ticker, BigDecimal quantity) {
+
+        Holding holding = getHolding(userId, ticker);
+
+        BigDecimal oldQuantity = holding.getQuantity();
+        BigDecimal newQuantity = oldQuantity.subtract(quantity);
+
+        if (BigDecimalUtil.isLessThanZero(newQuantity)) {
+            throw new BusinessException("持仓不足");
+        }
+
+        holding.setQuantity(newQuantity);
         return holdingRepository.save(holding);
     }
 }

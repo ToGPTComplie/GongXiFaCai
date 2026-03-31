@@ -29,6 +29,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -85,7 +86,7 @@ class TradeTransactionServiceImplTest {
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<TradeTransaction> transactionPage = new PageImpl<>(List.of(testTransaction), pageable, 1);
 
-        when(userRepository.existsById(userId)).thenReturn(true);
+        when(userService.existsById(userId)).thenReturn(true);
         when(tradeTransactionRepository.findByUser_Id(eq(userId), any(PageRequest.class))).thenReturn(transactionPage);
 
         // Act
@@ -108,7 +109,7 @@ class TradeTransactionServiceImplTest {
     void getUserTradeTransactions_UserDoesNotExist_ThrowsBusinessException() {
         // Arrange
         Long userId = 999L;
-        when(userRepository.existsById(userId)).thenReturn(false);
+        when(userService.existsById(userId)).thenReturn(false);
 
         // Act & Assert
         BusinessException exception = assertThrows(BusinessException.class, () -> {
@@ -126,33 +127,21 @@ class TradeTransactionServiceImplTest {
         BigDecimal price = new BigDecimal("50.0000");
         BigDecimal totalAmount = new BigDecimal("500.0000");
 
-        Holding testHolding = new Holding();
-        testHolding.setId(10L);
-        testHolding.setUser(testUser);
-        testHolding.setTicker(ticker);
-        testHolding.setAssetType(Holding.AssetType.STOCK);
-        testHolding.setQuantity(new BigDecimal("5.0000"));
-        testHolding.setAverageCost(new BigDecimal("40.0000"));
-
         when(userService.getUser(userId)).thenReturn(testUser);
-        when(holdingService.getOrCreateHolding(userId, ticker, Holding.AssetType.STOCK)).thenReturn(testHolding);
         when(tradeTransactionRepository.save(any(TradeTransaction.class))).thenAnswer(i -> i.getArguments()[0]);
 
         TradeTransaction result = tradeTransactionService.processTrade(userId, ticker, Holding.AssetType.STOCK, TradeTransaction.TransactionType.BUY, quantity, price);
 
         assertNotNull(result);
         assertEquals(0, new BigDecimal("500.0000").compareTo(testUser.getAvailableCash())); // 1000 - 500
-        assertEquals(0, new BigDecimal("15.0000").compareTo(testHolding.getQuantity())); // 5 + 10
-        // New cost = ((5 * 40) + 500) / 15 = 700 / 15 = 46.6667
-        assertEquals(0, new BigDecimal("46.6667").compareTo(testHolding.getAverageCost()));
 
         assertEquals(TradeTransaction.TransactionType.BUY, result.getTransactionType());
         assertEquals(0, totalAmount.compareTo(result.getTotalAmount()));
         assertEquals(0, quantity.compareTo(result.getQuantity()));
         assertEquals(0, price.compareTo(result.getPrice()));
 
-        verify(userRepository).save(testUser);
-        verify(holdingRepository).save(testHolding);
+        verify(userService).save(testUser);
+        verify(holdingService).applyBuy(eq(userId), eq(ticker), eq(Holding.AssetType.STOCK), any(BigDecimal.class), any(BigDecimal.class));
         verify(tradeTransactionRepository).save(any(TradeTransaction.class));
     }
 
@@ -164,32 +153,21 @@ class TradeTransactionServiceImplTest {
         BigDecimal price = new BigDecimal("150.0000");
         BigDecimal totalAmount = new BigDecimal("1500.0000");
 
-        Holding testHolding = new Holding();
-        testHolding.setId(10L);
-        testHolding.setUser(testUser);
-        testHolding.setTicker(ticker);
-        testHolding.setAssetType(Holding.AssetType.STOCK);
-        testHolding.setQuantity(new BigDecimal("15.0000"));
-        testHolding.setAverageCost(new BigDecimal("100.0000"));
-
         when(userService.getUser(userId)).thenReturn(testUser);
-        when(holdingService.getHolding(userId, ticker)).thenReturn(testHolding);
         when(tradeTransactionRepository.save(any(TradeTransaction.class))).thenAnswer(i -> i.getArguments()[0]);
 
         TradeTransaction result = tradeTransactionService.processTrade(userId, ticker, Holding.AssetType.STOCK, TradeTransaction.TransactionType.SELL, quantity, price);
 
         assertNotNull(result);
         assertEquals(0, new BigDecimal("2500.0000").compareTo(testUser.getAvailableCash())); // 1000 + 1500
-        assertEquals(0, new BigDecimal("5.0000").compareTo(testHolding.getQuantity())); // 15 - 10
-        assertEquals(0, new BigDecimal("100.0000").compareTo(testHolding.getAverageCost())); // Unchanged
 
         assertEquals(TradeTransaction.TransactionType.SELL, result.getTransactionType());
         assertEquals(0, totalAmount.compareTo(result.getTotalAmount()));
         assertEquals(0, quantity.compareTo(result.getQuantity()));
         assertEquals(0, price.compareTo(result.getPrice()));
 
-        verify(userRepository).save(testUser);
-        verify(holdingRepository).save(testHolding);
+        verify(userService).save(testUser);
+        verify(holdingService).applySell(eq(userId), eq(ticker), any(BigDecimal.class));
         verify(tradeTransactionRepository).save(any(TradeTransaction.class));
     }
 
@@ -231,16 +209,8 @@ class TradeTransactionServiceImplTest {
         BigDecimal quantity = new BigDecimal("20.0000");
         BigDecimal price = new BigDecimal("150.0000");
 
-        Holding testHolding = new Holding();
-        testHolding.setId(10L);
-        testHolding.setUser(testUser);
-        testHolding.setTicker(ticker);
-        testHolding.setAssetType(Holding.AssetType.STOCK);
-        testHolding.setQuantity(new BigDecimal("10.0000")); // only has 10, wants to sell 20
-        testHolding.setAverageCost(new BigDecimal("100.0000"));
-
         when(userService.getUser(userId)).thenReturn(testUser);
-        when(holdingService.getHolding(userId, ticker)).thenReturn(testHolding);
+        when(holdingService.applySell(eq(userId), eq(ticker), any(BigDecimal.class))).thenThrow(new BusinessException("持仓不足"));
 
         BusinessException exception = assertThrows(BusinessException.class, () -> {
             tradeTransactionService.processTrade(userId, ticker, Holding.AssetType.STOCK, TradeTransaction.TransactionType.SELL, quantity, price);
