@@ -10,6 +10,8 @@ public interface HoldingService {
 
     Holding getHolding(Long userId, String ticker);
 
+    BigDecimal getMarketPrice(String ticker);
+
     Holding getOrCreateHolding(Long userId, String ticker, Holding.AssetType assetType);
 
     Holding applyBuy(Long userId, String ticker, Holding.AssetType assetType, BigDecimal quantity, BigDecimal totalAmount);
