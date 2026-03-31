@@ -7,6 +7,8 @@ import com.gongxifacai.gongxifacai.repository.HoldingRepository;
 import com.gongxifacai.gongxifacai.repository.UserRepository;
 import com.gongxifacai.gongxifacai.service.UserService;
 
+import com.gongxifacai.gongxifacai.dto.UserInfo;
+
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
@@ -51,7 +53,7 @@ public class UserServiceImpl implements UserService {
     public User createUser(String name, BigDecimal initialCash) {
 
         User user = new User();
-        if(name == null){
+        if (name == null) {
             name = "";
         }
         user.setName(name);
@@ -62,10 +64,13 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
-    public record UserInfo(Long id, String name, BigDecimal availableCash){
-        public static UserInfo fromEntity(User user) {
+    @Override
+    public Boolean existsById(Long userId) {
+        return userRepository.existsById(userId);
+    }
 
-            return new UserInfo(user.getId(), user.getName(), user.getAvailableCash());
-        }
+    @Override
+    public void save(User user) {
+        userRepository.save(user);
     }
 }
