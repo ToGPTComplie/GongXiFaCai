@@ -12,10 +12,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,19 +52,62 @@ class UserControllerTest {
     }
 
     @Test
-    void getUserHoldings_ReturnsResultWrappedData() {
+    void getUserHoldings_ReturnsValuationData() {
         Holding holding = new Holding();
-        holding.setTicker("600519");
-        holding.setQuantity(new BigDecimal("10.0000"));
-        holding.setAverageCost(new BigDecimal("100.0000"));
+        holding.setTicker("INTC");
+        holding.setQuantity(new BigDecimal("10"));
+        holding.setAverageCost(new BigDecimal("40"));
         List<Holding> holdings = List.of(holding);
         when(userService.getUserHoldings(1L)).thenReturn(holdings);
 
-        Object response = userController.getUserHoldings(1L);
+        UserController spyController = spy(userController);
+        doReturn(new BigDecimal("41.19")).when(spyController).getCurrentPrice("INTC");
+        Object response = spyController.getUserHoldings(1L);
 
         Result<?> result = assertInstanceOf(Result.class, response);
         assertEquals(200, result.getCode());
         assertEquals("Success", result.getMessage());
-        assertEquals(holdings, result.getData());
+        UserController.HoldingValuation valuation = ((List<UserController.HoldingValuation>) result.getData()).getFirst();
+        assertEquals(new BigDecimal("411.90"), valuation.marketValue());
+        assertEquals(new BigDecimal("11.90"), valuation.profitLoss());
+    }
+
+    @Test
+    void getCurrentPrice_UsesOneMinuteCache() {
+        UserController controller = spy(userController);
+        List<BigDecimal> callPrices = new ArrayList<>();
+        callPrices.add(new BigDecimal("41.19"));
+        callPrices.add(new BigDecimal("42.00"));
+
+        doReturn(callPrices.getFirst())
+                .doReturn(callPrices.get(1))
+                .when(controller).fetchLatestPriceFromAlphaVantage("INTC");
+
+        BigDecimal first = controller.getCurrentPrice("INTC");
+        BigDecimal second = controller.getCurrentPrice("INTC");
+
+        assertEquals(new BigDecimal("41.19"), first);
+        assertEquals(new BigDecimal("41.19"), second);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void getPortfolioData_Returns50MarketRowsWithoutUserId() {
+        UserController controller = spy(userController);
+        Map<String, Object> quote = Map.of(
+                "01. symbol", "AAPL",
+                "05. price", "100.00",
+                "09. change", "1.50",
+                "10. change percent", "1.50%"
+        );
+        doReturn(quote).when(controller).fetchGlobalQuoteFromAlphaVantage(org.mockito.ArgumentMatchers.anyString());
+
+        Object response = controller.getPortfolioData();
+
+        Result<?> result = assertInstanceOf(Result.class, response);
+        assertEquals(200, result.getCode());
+        List<Map<String, Object>> data = (List<Map<String, Object>>) result.getData();
+        assertEquals(50, data.size());
+        verify(userService, never()).getUserHoldings(org.mockito.ArgumentMatchers.anyLong());
     }
 }
