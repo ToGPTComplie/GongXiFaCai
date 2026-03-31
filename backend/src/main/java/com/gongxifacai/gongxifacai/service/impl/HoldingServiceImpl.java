@@ -99,7 +99,7 @@ public class HoldingServiceImpl implements HoldingService {
     }
 
     @Override
-    public BigDecimal applyRealizedPnl(Long userId, String ticker, BigDecimal quantity, BigDecimal price) {
+    public BigDecimal calculateRealizedPnl(Long userId, String ticker, BigDecimal quantity, BigDecimal price) {
 
         Holding holding = getHolding(userId, ticker);
 

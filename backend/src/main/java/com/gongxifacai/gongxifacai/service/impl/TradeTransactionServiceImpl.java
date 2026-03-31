@@ -70,13 +70,13 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
             user.setAvailableCash(balance);
 
             holdingService.applyBuy(userId, ticker, assetType, quantity, totalAmount);
-            realizedPnl = holdingService.applyRealizedPnl(userId, ticker, quantity, price);
+
 
         } else if (transactionType == TradeTransaction.TransactionType.SELL) {
 
             BigDecimal balance = user.getAvailableCash().add(totalAmount);
             user.setAvailableCash(balance);
-
+            realizedPnl = holdingService.calculateRealizedPnl(userId, ticker, quantity, price);
             holdingService.applySell(userId, ticker, quantity);
         } else {
             throw new BusinessException("未知的交易类型");

@@ -16,5 +16,5 @@ public interface HoldingService {
 
     Holding applySell(Long userId, String ticker, BigDecimal quantity);
 
-    BigDecimal applyRealizedPnl(Long userId, String ticker, BigDecimal quantity, BigDecimal price);
+    BigDecimal calculateRealizedPnl(Long userId, String ticker, BigDecimal quantity, BigDecimal price);
 }
