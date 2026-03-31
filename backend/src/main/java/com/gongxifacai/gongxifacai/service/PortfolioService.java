@@ -1,5 +1,6 @@
 package com.gongxifacai.gongxifacai.service;
 
+import com.gongxifacai.gongxifacai.dto.TargetAllocationDTO;
 import com.gongxifacai.gongxifacai.dto.TradePlanDTO;
 
 import java.util.List;
