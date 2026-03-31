@@ -3,6 +3,7 @@ package com.gongxifacai.gongxifacai.service.impl;
 import com.gongxifacai.gongxifacai.dto.TradePlanDTO;
 import com.gongxifacai.gongxifacai.entity.Holding;
 import com.gongxifacai.gongxifacai.entity.TargetAllocation;
+import com.gongxifacai.gongxifacai.entity.User;
 import com.gongxifacai.gongxifacai.exception.BusinessException;
 import com.gongxifacai.gongxifacai.repository.TargetAllocationRepository;
 import com.gongxifacai.gongxifacai.service.HoldingService;
@@ -37,9 +38,11 @@ public class PortfolioServiceImpl implements PortfolioService {
     public void setTargetAllocations(Long userId, List<TargetAllocation> targetAllocationList) {
 
         BigDecimal cashPercent = new BigDecimal("1.0000");
+        User user = userService.getReferenceById(userId);
 
         for (TargetAllocation targetAllocation : targetAllocationList) {
             cashPercent = cashPercent.subtract(targetAllocation.getTargetPercentage());
+            targetAllocation.setUser(user);
         }
 
         if (BigDecimalUtil.isLessThanZero(cashPercent)) {
@@ -57,8 +60,6 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         List<Holding> holdings = holdingService.getUserHoldings(userId);
 
-        List<String> holdingTickers = holdings.stream().map(Holding::getTicker).toList();
-
         List<TargetAllocation> targetAllocations = targetAllocationRepository.findByUserId(userId);
 
         Map<String, Holding> holdingMap = holdings.stream().
@@ -71,23 +72,37 @@ public class PortfolioServiceImpl implements PortfolioService {
         allTickers.addAll(holdingMap.keySet());
         allTickers.addAll(targetAllocationMap.keySet());
 
-        Map<String, BigDecimal> marketPricesByTicker = holdingService.getMarketPricesByTicker(holdingTickers);
+        Map<String, BigDecimal> marketPricesByTicker = holdingService.getMarketPricesByTicker(new ArrayList<>(allTickers));
 
         BigDecimal currentTotalAsset = userService.getAvailableCash(userId);
+        if (currentTotalAsset == null) {
+            currentTotalAsset = BigDecimal.ZERO;
+        }
 
-        for (String ticker : allTickers){
-            currentTotalAsset = marketPricesByTicker.get(ticker).add(currentTotalAsset);
+        for (Holding holding : holdings) {
+            BigDecimal marketPrice = marketPricesByTicker.get(holding.getTicker());
+            if (marketPrice != null && holding.getQuantity() != null) {
+                currentTotalAsset = currentTotalAsset.add(marketPrice.multiply(holding.getQuantity()));
+            }
         }
 
         List<TradePlanDTO> tradePlanDTOs = new ArrayList<>();
 
+        if (currentTotalAsset.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("当前总资产不合法");
+        }
+
         for (String ticker : allTickers) {
 
-            Holding currentHolding = holdingMap.get(ticker);
             BigDecimal currentMarketPrice = marketPricesByTicker.get(ticker);
+            if (currentMarketPrice == null || currentMarketPrice.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+
+            Holding currentHolding = holdingMap.get(ticker);
             BigDecimal currentQuantity, currentAmount, currentPercentage;
 
-            if (currentHolding == null) {
+            if (currentHolding == null || currentHolding.getQuantity() == null) {
 
                 currentQuantity = BigDecimal.ZERO;
                 currentAmount = BigDecimal.ZERO;
@@ -103,8 +118,9 @@ public class PortfolioServiceImpl implements PortfolioService {
 
             TargetAllocation targetAllocation = targetAllocationMap.get(ticker);
 
-            BigDecimal targetPercentage = (targetAllocation != null) ? targetAllocation.getTargetPercentage() : BigDecimal.ZERO;
-            BigDecimal targetAmount = targetPercentage.multiply(currentMarketPrice);
+            BigDecimal targetPercentage = (targetAllocation != null && targetAllocation.getTargetPercentage() != null)
+                    ? targetAllocation.getTargetPercentage() : BigDecimal.ZERO;
+            BigDecimal targetAmount = targetPercentage.multiply(currentTotalAsset);
 
             BigDecimal diffPercentage = targetPercentage.subtract(currentPercentage);
 
