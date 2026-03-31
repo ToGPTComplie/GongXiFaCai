@@ -19,6 +19,8 @@ public class TradeTransactionResponseDTO {
     private BigDecimal quantity;
     private BigDecimal price;
     private BigDecimal totalAmount;
+    // SELL 时有值，BUY 时为 null
+    private BigDecimal realizedPnl;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime createdAt;
@@ -33,6 +35,7 @@ public class TradeTransactionResponseDTO {
         dto.setQuantity(t.getQuantity());
         dto.setPrice(t.getPrice());
         dto.setTotalAmount(t.getTotalAmount());
+        dto.setRealizedPnl(t.getRealizedPnl());
         dto.setCreatedAt(t.getCreatedAt());
         return dto;
     }

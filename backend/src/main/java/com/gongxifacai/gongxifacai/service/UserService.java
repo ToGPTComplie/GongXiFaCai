@@ -23,4 +23,6 @@ public interface UserService {
     void save(User user);
 
     User getReferenceById(Long userId);
+
+    List<User> getAllUsers();
 }
