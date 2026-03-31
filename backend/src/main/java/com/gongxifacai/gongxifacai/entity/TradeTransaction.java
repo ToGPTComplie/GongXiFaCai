@@ -46,6 +46,12 @@ public class TradeTransaction extends BaseEntity {
     @Column(name = "total_amount", precision = 19, scale = 4, nullable = false)
     private BigDecimal totalAmount;
 
+    // 仅 SELL 时有值，BUY 时为 null
+    // 计算时机：processTrade() 执行 SELL 的那一刻
+    // 公式：(sellPrice - holding.averageCost) × quantity
+    @Column(name = "realized_pnl", precision = 19, scale = 4)
+    private BigDecimal realizedPnl;
+
     public enum TransactionType {
         BUY, SELL
     }

@@ -55,6 +55,8 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
         // 交易总额
         BigDecimal totalAmount = quantity.multiply(price);
 
+        BigDecimal realizedPnl = null;
+
         if (transactionType == TradeTransaction.TransactionType.BUY) {
 
             BigDecimal balance = user.getAvailableCash().subtract(totalAmount);
@@ -68,6 +70,7 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
             user.setAvailableCash(balance);
 
             holdingService.applyBuy(userId, ticker, assetType, quantity, totalAmount);
+            realizedPnl = holdingService.applyRealizedPnl(userId, ticker, quantity, price);
 
         } else if (transactionType == TradeTransaction.TransactionType.SELL) {
 
@@ -92,6 +95,7 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
         tradeTransaction.setQuantity(quantity);
         tradeTransaction.setPrice(price);
         tradeTransaction.setTotalAmount(totalAmount);
+        tradeTransaction.setRealizedPnl(realizedPnl);
 
         // 记录并返回流水。
         return tradeTransactionRepository.save(tradeTransaction);

@@ -97,4 +97,12 @@ public class HoldingServiceImpl implements HoldingService {
         holding.setQuantity(newQuantity);
         return holdingRepository.save(holding);
     }
+
+    @Override
+    public BigDecimal applyRealizedPnl(Long userId, String ticker, BigDecimal quantity, BigDecimal price) {
+
+        Holding holding = getHolding(userId, ticker);
+
+        return quantity.multiply(price.subtract(holding.getAverageCost()));
+    }
 }

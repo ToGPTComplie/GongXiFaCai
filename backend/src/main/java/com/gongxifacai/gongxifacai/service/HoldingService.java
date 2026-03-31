@@ -15,4 +15,6 @@ public interface HoldingService {
     Holding applyBuy(Long userId, String ticker, Holding.AssetType assetType, BigDecimal quantity, BigDecimal totalAmount);
 
     Holding applySell(Long userId, String ticker, BigDecimal quantity);
+
+    BigDecimal applyRealizedPnl(Long userId, String ticker, BigDecimal quantity, BigDecimal price);
 }
