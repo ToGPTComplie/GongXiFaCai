@@ -7,7 +7,6 @@ import com.gongxifacai.gongxifacai.entity.FundTransaction;
 import com.gongxifacai.gongxifacai.entity.User;
 import com.gongxifacai.gongxifacai.exception.BusinessException;
 import com.gongxifacai.gongxifacai.repository.FundTransactionRepository;
-import com.gongxifacai.gongxifacai.repository.UserRepository;
 import com.gongxifacai.gongxifacai.service.FundTransactionService;
 import com.gongxifacai.gongxifacai.service.UserService;
 import com.gongxifacai.gongxifacai.util.BigDecimalUtil;

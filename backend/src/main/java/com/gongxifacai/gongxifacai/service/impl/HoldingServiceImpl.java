@@ -2,7 +2,6 @@ package com.gongxifacai.gongxifacai.service.impl;
 
 import com.gongxifacai.gongxifacai.entity.Holding;
 import com.gongxifacai.gongxifacai.repository.HoldingRepository;
-import com.gongxifacai.gongxifacai.repository.UserRepository;
 import com.gongxifacai.gongxifacai.service.HoldingService;
 
 import org.springframework.stereotype.Service;
