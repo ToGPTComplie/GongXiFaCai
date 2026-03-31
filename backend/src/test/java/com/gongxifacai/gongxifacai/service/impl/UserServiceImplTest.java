@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import com.gongxifacai.gongxifacai.dto.UserInfo;
 
 import static com.gongxifacai.gongxifacai.common.CommonErrorCode.USER_NOT_FOUND;
 import static org.junit.jupiter.api.Assertions.*;
@@ -84,7 +85,7 @@ class UserServiceImplTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(mockUser));
 
         // Act
-        UserServiceImpl.UserInfo result = userService.getUserInfo(1L);
+        UserInfo result = userService.getUserInfo(1L);
 
         // Assert
         assertNotNull(result);

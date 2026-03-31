@@ -9,6 +9,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.DecimalMin;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -29,10 +30,12 @@ public class Holding extends BaseEntity {
     private AssetType assetType;
 
     // 当前持仓数量
+    @DecimalMin(value = "0.0", message = "持仓数量必须大于等于0")
     @Column(name = "quantity", precision = 19, scale = 4, nullable = false)
     private BigDecimal quantity;
 
     // 平均持仓成本 (区别于单笔交易的 price)
+    @DecimalMin(value = "0.0", message = "平均成本必须大于等于0")
     @Column(name = "average_cost", precision = 19, scale = 4, nullable = false)
     private BigDecimal averageCost;
 

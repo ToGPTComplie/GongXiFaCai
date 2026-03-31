@@ -11,7 +11,10 @@ public enum CommonErrorCode implements ErrorCode {
     UNAUTHORIZED(401, "Unauthorized"),
     FORBIDDEN(403, "Forbidden"),
     NOT_FOUND(404, "Resource not found"),
-    SYSTEM_ERROR(500, "Internal server error");
+    SYSTEM_ERROR(500, "Internal server error"),
+    USER_NOT_FOUND(404, "User not found"),
+    WATCHLIST_ITEM_NOT_FOUND(404, "Watchlist item not found"),
+    WATCHLIST_ITEM_ALREADY_EXISTS(409, "Ticker already exists in watchlist");
 
     private final Integer code;
     private final String message;

@@ -9,6 +9,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.DecimalMin;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -33,14 +34,23 @@ public class TradeTransaction extends BaseEntity {
     @Column(name = "transaction_type", nullable = false)
     private TransactionType transactionType;
 
+    @DecimalMin(value = "0.0", message = "交易数量必须大于等于0")
     @Column(name = "quantity", precision = 19, scale = 4, nullable = false)
     private BigDecimal quantity;
 
+    @DecimalMin(value = "0.0", message = "价格必须大于等于0")
     @Column(name = "price", precision = 19, scale = 4, nullable = false)
     private BigDecimal price;
 
+    @DecimalMin(value = "0.0", message = "总金额必须大于等于0")
     @Column(name = "total_amount", precision = 19, scale = 4, nullable = false)
     private BigDecimal totalAmount;
+
+    // 仅 SELL 时有值，BUY 时为 null
+    // 计算时机：processTrade() 执行 SELL 的那一刻
+    // 公式：(sellPrice - holding.averageCost) × quantity
+    @Column(name = "realized_pnl", precision = 19, scale = 4)
+    private BigDecimal realizedPnl;
 
     public enum TransactionType {
         BUY, SELL
