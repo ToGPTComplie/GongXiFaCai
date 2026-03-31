@@ -19,7 +19,7 @@ import lombok.Setter;
 @Table(name = "user")
 public class User extends BaseEntity {
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String name;
 
     @DecimalMin(value = "0.00", inclusive = true, message = "可用现金必须大于0")
