@@ -22,7 +22,7 @@ public class Holding extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "ticker", nullable = false)
+    @Column(name = "ticker", nullable = false, unique = true)
     private String ticker;
 
     @Enumerated(EnumType.STRING)
