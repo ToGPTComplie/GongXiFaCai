@@ -1,8 +1,8 @@
 package com.gongxifacai.gongxifacai.controller;
 import com.gongxifacai.gongxifacai.common.CommonErrorCode;
 import com.gongxifacai.gongxifacai.common.Result;
-import com.gongxifacai.gongxifacai.dto.HoldingDTO;
 import com.gongxifacai.gongxifacai.dto.KLineCandleDTO;
+import com.gongxifacai.gongxifacai.dto.TopBottomHoldingsResponseDTO;
 import com.gongxifacai.gongxifacai.entity.Holding;
 import com.gongxifacai.gongxifacai.exception.BusinessException;
 import com.gongxifacai.gongxifacai.service.HoldingService;
@@ -28,8 +28,7 @@ import java.util.List;
 
 @RestController
 public class UserController {
-    // 这就是你问的 base-url
-    public static final String BASE_URL = "https://query1.finance.yahoo.com";
+
 
     @Autowired
     private UserService userService;
@@ -39,45 +38,7 @@ public class UserController {
     public Result<UserInfo> getUserInfo(@PathVariable Long id) {
         return Result.success(userService.getUserInfo(id));
     }
-    @GetMapping("test")
-    public void getProtofeil  () throws IOException, InterruptedException {
-        String ticker="AAPL";
-        try {
-            String url = BASE_URL + "/v8/finance/chart/" + ticker + "?interval=1d&range=1d";
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .header("User-Agent", "Mozilla/5.0")
-                    .build();
 
-            HttpResponse<String> response =
-                    HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new BusinessException(CommonErrorCode.SYSTEM_ERROR, "Failed to fetch market price");
-            }
-
-            JsonObject root = JsonParser.parseString(response.body()).getAsJsonObject();
-            System.out.println(root);
-            JsonObject chart = root.getAsJsonObject("chart");
-            JsonArray result = chart == null ? null : chart.getAsJsonArray("result");
-            if (result == null || result.isEmpty()) {
-                throw new BusinessException(CommonErrorCode.NOT_FOUND, "Market data not found: " + ticker);
-            }
-
-            JsonObject first = result.get(0).getAsJsonObject();
-            JsonObject meta = first.getAsJsonObject("meta");
-            JsonElement priceElement = meta == null ? null : meta.get("regularMarketPrice");
-            if (priceElement == null || priceElement.isJsonNull()) {
-                throw new BusinessException(CommonErrorCode.NOT_FOUND, "regularMarketPrice not found: " + ticker);
-            }
-            System.out.println(meta);
-            System.out.println(BigDecimal.valueOf(priceElement.getAsDouble()));
-        } catch (BusinessException ex) {
-            throw ex;
-        } catch (Exception ex) {
-            throw new BusinessException(CommonErrorCode.SYSTEM_ERROR, "Failed to fetch market price");
-        }
-    }
     @GetMapping("/api/v1/users/{id}/holdings")
     public Result<List<Holding>> getUserHoldings(@PathVariable Long id) {
         List<Holding> holdings = holdingService.getUserHoldings(id);
@@ -89,8 +50,12 @@ public class UserController {
         if (!userService.existsById(id)) {
             throw new BusinessException(CommonErrorCode.USER_NOT_FOUND);
         }
-
         return Result.success(holdingService.getMarketPrice(ticker));
+    }
+  
+    @GetMapping("/api/v1/users/{id}/holdings/top-bottom")
+    public Result<TopBottomHoldingsResponseDTO> getTopAndBottomHoldings(@PathVariable Long id) {
+        return Result.success(holdingService.getTopAndBottomHoldings(id));
     }
 
     @GetMapping("/api/v1/users/{id}/kline/{symbol}")

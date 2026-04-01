@@ -45,3 +45,5 @@ Thumbs.db
 
 .m2
 
+# Local config (contains secrets, never commit)
+application-local.properties

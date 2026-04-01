@@ -1,7 +1,9 @@
 package com.gongxifacai.gongxifacai.controller;
 
 import com.gongxifacai.gongxifacai.common.Result;
+import com.gongxifacai.gongxifacai.dto.HoldingDTO;
 import com.gongxifacai.gongxifacai.dto.KLineCandleDTO;
+import com.gongxifacai.gongxifacai.dto.TopBottomHoldingsResponseDTO;
 import com.gongxifacai.gongxifacai.service.HoldingService;
 import com.gongxifacai.gongxifacai.service.UserService;
 import com.gongxifacai.gongxifacai.dto.UserInfo;
@@ -16,7 +18,6 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -64,5 +65,33 @@ class UserControllerTest {
         assertEquals(200, response.getCode());
         assertEquals(1, response.getData().size());
         assertEquals(new BigDecimal("153.00"), response.getData().getFirst().getClose());
+    }
+
+    @Test
+    void getTopAndBottomHoldings_ReturnsThreeBestAndWorst() {
+        TopBottomHoldingsResponseDTO responseDTO = new TopBottomHoldingsResponseDTO(
+                List.of(createHolding("AAPL", "100"), createHolding("MSFT", "30"), createHolding("GOOGL", "5")),
+                List.of(createHolding("NVDA", "-50"), createHolding("TSLA", "-10"), createHolding("GOOGL", "5"))
+        );
+        when(holdingService.getTopAndBottomHoldings(1L)).thenReturn(responseDTO);
+
+        Result<TopBottomHoldingsResponseDTO> response = userController.getTopAndBottomHoldings(1L);
+
+        assertEquals(200, response.getCode());
+        assertEquals(3, response.getData().getTopProfitable().size());
+        assertEquals(3, response.getData().getTopLosing().size());
+        assertEquals("AAPL", response.getData().getTopProfitable().get(0).getTicker());
+        assertEquals("MSFT", response.getData().getTopProfitable().get(1).getTicker());
+        assertEquals("GOOGL", response.getData().getTopProfitable().get(2).getTicker());
+        assertEquals("NVDA", response.getData().getTopLosing().get(0).getTicker());
+        assertEquals("TSLA", response.getData().getTopLosing().get(1).getTicker());
+        assertEquals("GOOGL", response.getData().getTopLosing().get(2).getTicker());
+    }
+
+    private HoldingDTO createHolding(String ticker, String pl) {
+        HoldingDTO dto = new HoldingDTO();
+        dto.setTicker(ticker);
+        dto.setPl(new BigDecimal(pl));
+        return dto;
     }
 }
