@@ -34,7 +34,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<Holding> getUserHoldings(Long userId) {
         getUser(userId);
-        return holdingRepository.findByUserId(userId);
+        return holdingRepository.findByUser_Id(userId);
     }
 
     @Override

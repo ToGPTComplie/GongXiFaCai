@@ -106,7 +106,7 @@ class UserServiceImplTest {
         List<Holding> holdings = List.of(holding);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(mockUser));
-        when(holdingRepository.findByUserId(1L)).thenReturn(holdings);
+        when(holdingRepository.findByUser_Id(1L)).thenReturn(holdings);
 
         // Act
         List<Holding> result = userService.getUserHoldings(1L);
@@ -115,7 +115,7 @@ class UserServiceImplTest {
         assertEquals(1, result.size());
         assertEquals("600519", result.getFirst().getTicker());
         verify(userRepository, times(1)).findById(1L);
-        verify(holdingRepository, times(1)).findByUserId(1L);
+        verify(holdingRepository, times(1)).findByUser_Id(1L);
     }
 
     @Test
