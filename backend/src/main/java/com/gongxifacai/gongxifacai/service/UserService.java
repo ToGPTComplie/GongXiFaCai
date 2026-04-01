@@ -24,5 +24,7 @@ public interface UserService {
 
     User getReferenceById(Long userId);
 
+    List<User> getAllUsers();
+
     BigDecimal getAvailableCash(Long userId);
 }

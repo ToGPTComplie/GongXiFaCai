@@ -59,7 +59,7 @@ class HoldingServiceImplTest {
     @Test
     void getUserHoldings_ShouldReturnHoldingsList() {
         // Arrange
-        when(holdingRepository.findByUserId(userId)).thenReturn(Arrays.asList(existingHolding));
+        when(holdingRepository.findByUser_Id(userId)).thenReturn(Arrays.asList(existingHolding));
 
         // Act
         List<Holding> result = holdingService.getUserHoldings(userId);
@@ -68,13 +68,13 @@ class HoldingServiceImplTest {
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals(ticker, result.get(0).getTicker());
-        verify(holdingRepository, times(1)).findByUserId(userId);
+        verify(holdingRepository, times(1)).findByUser_Id(userId);
     }
 
     @Test
     void getHolding_WhenExists_ShouldReturnHolding() {
         // Arrange
-        when(holdingRepository.findByUserId(userId)).thenReturn(Arrays.asList(existingHolding));
+        when(holdingRepository.findByUser_Id(userId)).thenReturn(Arrays.asList(existingHolding));
 
         // Act
         Holding result = holdingService.getHolding(userId, ticker);
@@ -87,7 +87,7 @@ class HoldingServiceImplTest {
     @Test
     void getHolding_WhenNotExists_ShouldThrowException() {
         // Arrange
-        when(holdingRepository.findByUserId(userId)).thenReturn(Collections.emptyList());
+        when(holdingRepository.findByUser_Id(userId)).thenReturn(Collections.emptyList());
 
         // Act & Assert
         BusinessException exception = assertThrows(BusinessException.class, () -> {
@@ -99,7 +99,7 @@ class HoldingServiceImplTest {
     @Test
     void getOrCreateHolding_WhenExists_ShouldReturnExistingWithoutSaving() {
         // Arrange
-        when(holdingRepository.findByUserId(userId)).thenReturn(Arrays.asList(existingHolding));
+        when(holdingRepository.findByUser_Id(userId)).thenReturn(Arrays.asList(existingHolding));
 
         // Act
         Holding result = holdingService.getOrCreateHolding(userId, ticker, Holding.AssetType.STOCK);
@@ -114,7 +114,7 @@ class HoldingServiceImplTest {
     @Test
     void getOrCreateHolding_WhenNotExists_ShouldCreateAndSaveNewHolding() {
         // Arrange
-        when(holdingRepository.findByUserId(userId)).thenReturn(Collections.emptyList());
+        when(holdingRepository.findByUser_Id(userId)).thenReturn(Collections.emptyList());
 
         User proxyUser = new User();
         proxyUser.setId(userId);
