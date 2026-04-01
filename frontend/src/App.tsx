@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { TradingViewMiniChartWarmup } from "./components/TradingViewMiniChartWarmup";
 import { TransactionModal } from "./components/TransactionModal";
+import { AIRiskAnalysisModal } from "./components/AIRiskAnalysisModal";
 
 function getSidebarStorageKey(userId: string) {
   return `sidebar:collapsed:${userId}`;
@@ -12,6 +13,7 @@ export function AppShell() {
   const { id = "1" } = useParams();
   const [searchParams] = useSearchParams();
   const showModal = searchParams.get("modal") === "transaction";
+  const [showRiskModal, setShowRiskModal] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -84,7 +86,63 @@ export function AppShell() {
           >
             Targets
           </Link>
+          <Link
+            className={
+              location.pathname === `/users/${id}/performance` ? "nav-link active" : "nav-link"
+            }
+            to={`/users/${id}/performance`}
+          >
+            Performance
+          </Link>
         </nav>
+        <div style={{ marginTop: "auto", padding: "1rem 0.5rem", borderTop: "1px solid rgba(24,34,44,0.08)" }}>
+          {!isSidebarCollapsed ? (
+            <button
+              onClick={() => setShowRiskModal(true)}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                padding: "0.625rem 1rem",
+                background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                color: "#fff",
+                border: "none",
+                borderRadius: "10px",
+                cursor: "pointer",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                boxShadow: "0 2px 8px rgba(99,102,241,0.35)",
+                transition: "opacity 0.15s ease",
+              }}
+            >
+              <span>✨</span> AI Analysis
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowRiskModal(true)}
+              title="AI Risk Analysis"
+              style={{
+                width: "2.5rem",
+                height: "2.5rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto",
+                background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                color: "#fff",
+                border: "none",
+                borderRadius: "10px",
+                cursor: "pointer",
+                fontSize: "1.1rem",
+                boxShadow: "0 2px 8px rgba(99,102,241,0.35)",
+              }}
+            >
+              ✨
+            </button>
+          )}
+        </div>
       </aside>
       {isSidebarCollapsed ? (
         <button
@@ -101,6 +159,7 @@ export function AppShell() {
       </main>
       <TradingViewMiniChartWarmup userId={id} />
       {showModal ? <TransactionModal userId={id} /> : null}
+      {showRiskModal ? <AIRiskAnalysisModal userId={id} onClose={() => setShowRiskModal(false)} /> : null}
     </div>
   );
 }

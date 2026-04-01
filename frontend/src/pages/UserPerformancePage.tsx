@@ -10,19 +10,20 @@ export function UserPerformancePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
+  // Load summary data when period changes
   useEffect(() => {
     if (!id) return;
     
     let isMounted = true;
     const abortController = new AbortController();
 
-    async function loadData() {
+    async function loadSummaryData() {
       setIsLoading(true);
       setError(null);
       try {
-        const result = await getPerformanceSummary(id as string, period, abortController.signal);
+        const summaryResult = await getPerformanceSummary(id as string, period, abortController.signal);
         if (isMounted) {
-          setData(result);
+          setData(summaryResult);
         }
       } catch (err: any) {
         if (err.name === "AbortError") return;
@@ -36,7 +37,7 @@ export function UserPerformancePage() {
       }
     }
 
-    loadData();
+    loadSummaryData();
 
     return () => {
       isMounted = false;
@@ -59,12 +60,34 @@ export function UserPerformancePage() {
         <h1>Trading Performance</h1>
       </header>
       
-      <div className="performance-controls" style={{ marginBottom: "2rem", display: "flex", gap: "0.5rem" }}>
+      <div 
+        className="performance-controls" 
+        style={{ 
+          marginBottom: "2rem", 
+          display: "inline-flex", 
+          gap: "0.25rem",
+          background: "#f1f5f9",
+          padding: "0.375rem",
+          borderRadius: "0.75rem",
+          boxShadow: "inset 0 1px 2px rgba(0, 0, 0, 0.05)"
+        }}
+      >
         {periods.map((p) => (
           <button
             key={p.value}
             onClick={() => setPeriod(p.value)}
-            className={`btn ${period === p.value ? "btn-primary" : "btn-secondary"}`}
+            style={{
+              border: "none",
+              background: period === p.value ? "#ffffff" : "transparent",
+              color: period === p.value ? "#0f172a" : "#64748b",
+              padding: "0.5rem 1.25rem",
+              borderRadius: "0.5rem",
+              cursor: "pointer",
+              fontSize: "0.875rem",
+              fontWeight: period === p.value ? "600" : "500",
+              boxShadow: period === p.value ? "0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06)" : "none",
+              transition: "all 0.15s ease",
+            }}
           >
             {p.label}
           </button>
@@ -139,4 +162,3 @@ export function UserPerformancePage() {
     </div>
   );
 }
-

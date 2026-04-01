@@ -5,6 +5,7 @@ import { UserTransactionsPage } from "./pages/UserTransactionsPage";
 import { UserWatchlistPage } from "./pages/UserWatchlistPage";
 import { WatchlistDetailPage } from "./pages/WatchlistDetailPage";
 import { UserTargetAllocationsPage } from "./pages/UserTargetAllocationsPage";
+import { UserPerformancePage } from "./pages/UserPerformancePage";
 
 export const router = createBrowserRouter([
   {
@@ -34,6 +35,10 @@ export const router = createBrowserRouter([
       {
         path: "targets",
         element: <UserTargetAllocationsPage />,
+      },
+      {
+        path: "performance",
+        element: <UserPerformancePage />,
       },
     ],
   },
