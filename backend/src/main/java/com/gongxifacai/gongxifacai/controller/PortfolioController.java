@@ -1,12 +1,15 @@
 package com.gongxifacai.gongxifacai.controller;
 
 import com.gongxifacai.gongxifacai.common.Result;
+import com.gongxifacai.gongxifacai.dto.PerformancePeriod;
+import com.gongxifacai.gongxifacai.dto.PerformanceSummaryDTO;
 import com.gongxifacai.gongxifacai.dto.PortfolioPerformanceDTO;
 import com.gongxifacai.gongxifacai.dto.RiskAnalysisResultDTO;
 import com.gongxifacai.gongxifacai.dto.TargetAllocationDTO;
 import com.gongxifacai.gongxifacai.dto.TradePlanDTO;
 import com.gongxifacai.gongxifacai.entity.TargetAllocation;
 import com.gongxifacai.gongxifacai.scheduler.MarketCloseScheduler;
+import com.gongxifacai.gongxifacai.service.PerformanceService;
 import com.gongxifacai.gongxifacai.service.PortfolioService;
 import com.gongxifacai.gongxifacai.service.PortfolioSnapshotService;
 import com.gongxifacai.gongxifacai.service.RiskAnalysisService;
@@ -27,6 +30,7 @@ public class PortfolioController {
     private final MarketCloseScheduler marketCloseScheduler;
     private final PortfolioService portfolioService;
     private final RiskAnalysisService riskAnalysisService;
+    private final PerformanceService performanceService;
 
     /**
      * 查询用户 Portfolio 折线图数据
@@ -92,6 +96,7 @@ public class PortfolioController {
         return Result.success(portfolioService.executeRebalance(userId));
     }
   
+    /**
      * AI 风险分析
      * GET /api/v1/users/{id}/portfolio/risk-analysis
      * 分析：单一资产集中度、资产类别集中度、行业集中度、现金比例
@@ -99,5 +104,18 @@ public class PortfolioController {
     @GetMapping("/{id}/portfolio/risk-analysis")
     public Result<RiskAnalysisResultDTO> analyzeRisk(@PathVariable("id") Long userId) {
         return Result.success(riskAnalysisService.analyzeRisk(userId));
+    }
+
+    /**
+     * 查询用户在指定时间段内的已实现盈亏汇总
+     * GET /api/v1/users/{id}/portfolio/performance/summary?period=D7
+     *
+     * @param period H24 | D7 | D30 | D90 | YTD | ALL
+     */
+    @GetMapping("/{id}/portfolio/performance/summary")
+    public Result<PerformanceSummaryDTO> getPerformanceSummary(
+            @PathVariable("id") Long userId,
+            @RequestParam PerformancePeriod period) {
+        return Result.success(performanceService.getPerformanceSummary(userId, period));
     }
 }
