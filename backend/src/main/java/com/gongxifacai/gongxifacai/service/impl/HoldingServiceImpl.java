@@ -25,6 +25,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -192,6 +195,11 @@ public class HoldingServiceImpl implements HoldingService {
     }
 
     @Override
+    public BigDecimal getMarketPrice(String ticker) {
+        return null;
+    }
+
+    @Override
     @Transactional
     public Holding getOrCreateHolding(Long userId, String ticker, Holding.AssetType assetType) {
         List<Holding> holdings = getUserHoldings(userId);
@@ -208,6 +216,18 @@ public class HoldingServiceImpl implements HoldingService {
         holding.setQuantity(BigDecimal.ZERO);
         holding.setAverageCost(BigDecimal.ZERO);
         return holdingRepository.save(holding);
+    }
+
+    @Override
+    public Map<Holding, BigDecimal> getMarketPricesByHolding(List<Holding> holdings) {
+        return holdings.stream().
+                collect(Collectors.toMap(h -> h, h -> this.getMarketPrice(h.getTicker())));
+    }
+
+    @Override
+    public Map<String, BigDecimal> getMarketPricesByTicker(List<String> tickers) {
+        return tickers.stream().
+                collect(Collectors.toMap(t -> t, this::getMarketPrice));
     }
 
     @Override
@@ -239,6 +259,21 @@ public class HoldingServiceImpl implements HoldingService {
     }
 
     @Override
+    public BigDecimal calculateHoldingMarketValue(Holding holding) {
+        return getMarketPrice(holding.getTicker()).multiply(holding.getQuantity());
+    }
+
+    @Override
+    public BigDecimal calculateTotalHoldingsMarketValue(List<Holding> holdings) {
+        return holdings.stream().map(this::calculateHoldingMarketValue).reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
+    public BigDecimal calculateTotalHoldingsMarketValue(Map<Holding, BigDecimal> currentMarketPriceMap) {
+        return currentMarketPriceMap.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+
     public BigDecimal calculateRealizedPnl(Long userId, String ticker, BigDecimal quantity, BigDecimal price) {
         Holding holding = getHolding(userId, ticker);
         return quantity.multiply(price.subtract(holding.getAverageCost()));
