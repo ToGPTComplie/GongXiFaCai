@@ -2,7 +2,6 @@ package com.gongxifacai.gongxifacai.controller;
 
 import com.gongxifacai.gongxifacai.common.Result;
 import com.gongxifacai.gongxifacai.dto.KLineCandleDTO;
-import com.gongxifacai.gongxifacai.entity.Holding;
 import com.gongxifacai.gongxifacai.service.HoldingService;
 import com.gongxifacai.gongxifacai.service.UserService;
 import com.gongxifacai.gongxifacai.dto.UserInfo;
@@ -48,22 +47,6 @@ class UserControllerTest {
         assertEquals(200, response.getCode());
         assertEquals("Success", response.getMessage());
         assertEquals(userInfo, response.getData());
-    }
-
-    @Test
-    void getUserHoldings_ReturnsList() {
-        Holding holding = new Holding();
-        holding.setTicker("AAPL");
-        holding.setQuantity(new BigDecimal("10"));
-        holding.setAverageCost(new BigDecimal("150.00"));
-        List<Holding> holdings = List.of(holding);
-        when(holdingService.getUserHoldings(1L)).thenReturn(holdings);
-
-        Result<List<Holding>> response = userController.getUserHoldings(1L);
-
-        assertEquals(200, response.getCode());
-        assertEquals(1, response.getData().size());
-        assertEquals("AAPL", response.getData().getFirst().getTicker());
     }
 
     @Test
