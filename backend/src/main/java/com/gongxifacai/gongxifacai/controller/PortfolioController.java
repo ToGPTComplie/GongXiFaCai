@@ -2,12 +2,14 @@ package com.gongxifacai.gongxifacai.controller;
 
 import com.gongxifacai.gongxifacai.common.Result;
 import com.gongxifacai.gongxifacai.dto.PortfolioPerformanceDTO;
+import com.gongxifacai.gongxifacai.dto.RiskAnalysisResultDTO;
 import com.gongxifacai.gongxifacai.dto.TargetAllocationDTO;
 import com.gongxifacai.gongxifacai.dto.TradePlanDTO;
 import com.gongxifacai.gongxifacai.entity.TargetAllocation;
 import com.gongxifacai.gongxifacai.scheduler.MarketCloseScheduler;
 import com.gongxifacai.gongxifacai.service.PortfolioService;
 import com.gongxifacai.gongxifacai.service.PortfolioSnapshotService;
+import com.gongxifacai.gongxifacai.service.RiskAnalysisService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -24,6 +26,7 @@ public class PortfolioController {
     private final PortfolioSnapshotService portfolioSnapshotService;
     private final MarketCloseScheduler marketCloseScheduler;
     private final PortfolioService portfolioService;
+    private final RiskAnalysisService riskAnalysisService;
 
     /**
      * 查询用户 Portfolio 折线图数据
@@ -69,5 +72,15 @@ public class PortfolioController {
     @GetMapping("/{id}/portfolio/rebalance-preview")
     public Result<List<TradePlanDTO>> previewRebalance(@PathVariable("id") Long userId) {
         return Result.success(portfolioService.previewRebalance(userId));
+    }
+
+    /**
+     * AI 风险分析
+     * GET /api/v1/users/{id}/portfolio/risk-analysis
+     * 分析：单一资产集中度、资产类别集中度、行业集中度、现金比例
+     */
+    @GetMapping("/{id}/portfolio/risk-analysis")
+    public Result<RiskAnalysisResultDTO> analyzeRisk(@PathVariable("id") Long userId) {
+        return Result.success(riskAnalysisService.analyzeRisk(userId));
     }
 }
