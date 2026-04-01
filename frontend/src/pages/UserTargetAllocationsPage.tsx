@@ -1,8 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { CustomSelect } from "../components/CustomSelect";
-import { getUserHoldings, saveTargetAllocations } from "../lib/api";
-import type { Holding, TargetAllocationRequest, TargetAllocationRow } from "../lib/types";
+import {
+  executeRebalance,
+  getTargetAllocations,
+  getUserHoldings,
+  previewRebalance,
+  saveTargetAllocations,
+} from "../lib/api";
+import { formatCurrency } from "../lib/format";
+import type {
+  Holding,
+  RebalancePreviewPlan,
+  TargetAllocation,
+  TargetAllocationRequest,
+  TargetAllocationRow,
+} from "../lib/types";
 
 const ASSET_TYPE_OPTIONS = [
   { label: "Stock", value: "STOCK" },
@@ -28,6 +41,17 @@ function buildInitialRows(holdings: Holding[]): TargetAllocationRow[] {
       assetType: holding.assetType,
       targetPercentInput: "",
     }));
+}
+
+function buildRowsFromTargets(targets: TargetAllocation[], holdings: Holding[]): TargetAllocationRow[] {
+  const holdingAssetTypeMap = new Map(holdings.map((holding) => [normalizeTicker(holding.ticker), holding.assetType]));
+
+  return targets.map((target, index) => ({
+    id: `target-${index}-${normalizeTicker(target.ticker)}`,
+    ticker: target.ticker,
+    assetType: target.assetType ?? holdingAssetTypeMap.get(normalizeTicker(target.ticker)) ?? "STOCK",
+    targetPercentInput: String(Number((target.targetPercentage * 100).toFixed(2))),
+  }));
 }
 
 function createEmptyRow(index: number): TargetAllocationRow {
@@ -59,18 +83,30 @@ export function UserTargetAllocationsPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [previewPlans, setPreviewPlans] = useState<RebalancePreviewPlan[] | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
 
-    async function loadHoldings() {
+    async function loadTargetPage() {
       setError(null);
       setSaveError(null);
       setSaveMessage(null);
+      setPreviewError(null);
 
       try {
-        const holdings = await getUserHoldings(id, controller.signal);
-        const initialRows = buildInitialRows(holdings);
+        const [holdings, savedTargets] = await Promise.all([
+          getUserHoldings(id, controller.signal),
+          getTargetAllocations(id, controller.signal).catch(() => []),
+        ]);
+
+        const initialRows = savedTargets.length > 0
+          ? buildRowsFromTargets(savedTargets, holdings)
+          : buildInitialRows(holdings);
+
         setRows(initialRows.length > 0 ? initialRows : [createEmptyRow(0)]);
       } catch (loadError) {
         if (!controller.signal.aborted) {
@@ -80,7 +116,7 @@ export function UserTargetAllocationsPage() {
       }
     }
 
-    void loadHoldings();
+    void loadTargetPage();
 
     return () => {
       controller.abort();
@@ -122,8 +158,8 @@ export function UserTargetAllocationsPage() {
         return "Target percentage is required for every allocation row.";
       }
 
-      if (!Number.isFinite(parsed) || parsed < 0) {
-        return "Target percentage must be a valid non-negative number.";
+      if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+        return "Target percentage must be a valid number between 0 and 100.";
       }
     }
 
@@ -140,12 +176,16 @@ export function UserTargetAllocationsPage() {
     setRows((current) => current.map((row) => (row.id === rowId ? { ...row, ...patch } : row)));
     setSaveError(null);
     setSaveMessage(null);
+    setPreviewPlans(null);
+    setPreviewError(null);
   }
 
   function addRow() {
     setRows((current) => [...current, createEmptyRow(current.length)]);
     setSaveError(null);
     setSaveMessage(null);
+    setPreviewPlans(null);
+    setPreviewError(null);
   }
 
   function removeRow(rowId: string) {
@@ -155,6 +195,18 @@ export function UserTargetAllocationsPage() {
     });
     setSaveError(null);
     setSaveMessage(null);
+    setPreviewPlans(null);
+    setPreviewError(null);
+  }
+
+  function buildPayload(): TargetAllocationRequest[] {
+    return rows
+      .filter((row) => row.ticker.trim() !== "" && row.targetPercentInput.trim() !== "")
+      .map((row) => ({
+        ticker: normalizeTicker(row.ticker),
+        assetType: row.assetType,
+        targetPercentage: Number((Number(row.targetPercentInput) / 100).toFixed(4)),
+      }));
   }
 
   async function handleSave() {
@@ -162,23 +214,53 @@ export function UserTargetAllocationsPage() {
       return;
     }
 
-    const payload: TargetAllocationRequest[] = rows
-      .filter((row) => row.ticker.trim() !== "" && row.targetPercentInput.trim() !== "")
-      .map((row) => ({
-        ticker: normalizeTicker(row.ticker),
-        targetPercentage: Number((Number(row.targetPercentInput) / 100).toFixed(4)),
-      }));
-
     try {
       setIsSaving(true);
       setSaveError(null);
       setSaveMessage(null);
-      await saveTargetAllocations(id, payload);
+      await saveTargetAllocations(id, buildPayload());
       setSaveMessage("Target allocations saved.");
     } catch (submitError) {
       setSaveError(submitError instanceof Error ? submitError.message : "Failed to save target allocations");
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handlePreview() {
+    if (!canSave || validationMessage) {
+      return;
+    }
+
+    try {
+      setIsPreviewing(true);
+      setSaveError(null);
+      setSaveMessage(null);
+      setPreviewError(null);
+      await saveTargetAllocations(id, buildPayload());
+      const nextPreviewPlans = await previewRebalance(id);
+      setPreviewPlans(nextPreviewPlans);
+      setSaveMessage("Target allocations saved and preview refreshed.");
+    } catch (previewLoadError) {
+      setPreviewError(previewLoadError instanceof Error ? previewLoadError.message : "Failed to preview rebalance");
+    } finally {
+      setIsPreviewing(false);
+    }
+  }
+
+  async function handleExecute() {
+    try {
+      setIsExecuting(true);
+      setPreviewError(null);
+      const executedPlans = await executeRebalance(id);
+      setPreviewPlans(executedPlans);
+      setSaveMessage("Rebalance executed.");
+      window.dispatchEvent(new Event("portfolio:refresh"));
+      window.dispatchEvent(new CustomEvent("transactions:refresh", { detail: { userId: id } }));
+    } catch (executeError) {
+      setPreviewError(executeError instanceof Error ? executeError.message : "Failed to execute rebalance");
+    } finally {
+      setIsExecuting(false);
     }
   }
 
@@ -192,9 +274,14 @@ export function UserTargetAllocationsPage() {
             Set desired portfolio weights for stock and bond tickers. Any remaining allocation stays in cash.
           </p>
         </div>
-        <button className="primary-button" type="button" onClick={handleSave} disabled={!canSave || isSaving}>
-          {isSaving ? "Saving..." : "Save Targets"}
-        </button>
+        <div className="target-actions">
+          <button className="ghost-button" type="button" onClick={handlePreview} disabled={!canSave || isPreviewing || isSaving}>
+            {isPreviewing ? "Previewing..." : "Preview Rebalance"}
+          </button>
+          <button className="primary-button" type="button" onClick={handleSave} disabled={!canSave || isSaving || isPreviewing}>
+            {isSaving ? "Saving..." : "Save Targets"}
+          </button>
+        </div>
       </header>
 
       <section className="stats-grid" aria-label="Allocation summary">
@@ -291,6 +378,71 @@ export function UserTargetAllocationsPage() {
           </button>
           <p className="helper-text">You can define future stock or bond positions even if they are not held yet.</p>
         </div>
+      </article>
+
+      <article className="panel">
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow">Rebalance</p>
+            <h3>Preview</h3>
+            <p className="subtle-text">Preview shows the trade plan generated from the saved target allocation set.</p>
+          </div>
+          <button
+            className="primary-button"
+            type="button"
+            onClick={handleExecute}
+            disabled={!previewPlans || previewPlans.length === 0 || isExecuting}
+          >
+            {isExecuting ? "Executing..." : "Execute Rebalance"}
+          </button>
+        </div>
+
+        {previewError ? <div className="form-error">{previewError}</div> : null}
+
+        {previewPlans === null ? (
+          <div className="empty-state">
+            <h4>No preview loaded yet</h4>
+            <p>Save or preview your target allocation to generate a rebalance plan.</p>
+          </div>
+        ) : previewPlans.length === 0 ? (
+          <div className="empty-state">
+            <h4>No rebalance needed</h4>
+            <p>Your current allocation is already close enough to the saved target weights.</p>
+          </div>
+        ) : (
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Action</th>
+                  <th>Ticker</th>
+                  <th>Type</th>
+                  <th>Price</th>
+                  <th>Target</th>
+                  <th>Current</th>
+                  <th>Diff</th>
+                  <th>Trade Qty</th>
+                  <th>Trade Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {previewPlans.map((plan) => (
+                  <tr key={`${plan.transactionType}-${plan.ticker}`}>
+                    <td>{plan.transactionType}</td>
+                    <td>{plan.ticker}</td>
+                    <td>{plan.assetType ?? "—"}</td>
+                    <td>{formatCurrency(plan.marketPrice)}</td>
+                    <td>{(plan.targetPercentage * 100).toFixed(2)}%</td>
+                    <td>{(plan.currentPercentage * 100).toFixed(2)}%</td>
+                    <td>{(plan.diffPercentage * 100).toFixed(2)}%</td>
+                    <td>{plan.tradeQuantity.toFixed(4)}</td>
+                    <td>{formatCurrency(plan.tradeAmount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </article>
     </section>
   );

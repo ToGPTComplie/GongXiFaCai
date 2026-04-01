@@ -794,6 +794,12 @@ th {
   color: #255936;
 }
 
+.target-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
 .target-allocation-list {
   display: flex;
   flex-direction: column;
@@ -1138,7 +1144,8 @@ th {
 
   .watchlist-identity,
   .watchlist-card-footer,
-  .target-allocation-footer {
+  .target-allocation-footer,
+  .target-actions {
     flex-direction: column;
     align-items: flex-start;
   }

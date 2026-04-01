@@ -127,6 +127,7 @@ export interface WatchlistItemRequest {
 
 export interface TargetAllocationRequest {
   ticker: string;
+  assetType: "STOCK" | "BOND";
   targetPercentage: number;
 }
 
@@ -135,4 +136,22 @@ export interface TargetAllocationRow {
   ticker: string;
   assetType: "STOCK" | "BOND";
   targetPercentInput: string;
+}
+
+export interface TargetAllocation {
+  ticker: string;
+  assetType: "STOCK" | "BOND" | null;
+  targetPercentage: number;
+}
+
+export interface RebalancePreviewPlan {
+  ticker: string;
+  assetType: "STOCK" | "BOND" | null;
+  transactionType: "BUY" | "SELL";
+  marketPrice: number;
+  currentPercentage: number;
+  targetPercentage: number;
+  diffPercentage: number;
+  tradeAmount: number;
+  tradeQuantity: number;
 }

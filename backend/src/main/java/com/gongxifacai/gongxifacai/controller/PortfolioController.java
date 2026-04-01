@@ -48,6 +48,15 @@ public class PortfolioController {
     }
 
     /**
+     * 获取用户当前保存的目标资产配置
+     * GET /api/v1/users/{id}/portfolio/target
+     */
+    @GetMapping("/{id}/portfolio/target")
+    public Result<List<TargetAllocationDTO>> getTargetAllocations(@PathVariable("id") Long userId) {
+        return Result.success(portfolioService.getTargetAllocations(userId));
+    }
+
+    /**
      * 设置用户的目标资产配置
      * POST /api/v1/users/{id}/portfolio/target
      */
@@ -69,5 +78,14 @@ public class PortfolioController {
     @GetMapping("/{id}/portfolio/rebalance-preview")
     public Result<List<TradePlanDTO>> previewRebalance(@PathVariable("id") Long userId) {
         return Result.success(portfolioService.previewRebalance(userId));
+    }
+
+    /**
+     * 执行再平衡
+     * POST /api/v1/users/{id}/portfolio/rebalance-execute
+     */
+    @PostMapping("/{id}/portfolio/rebalance-execute")
+    public Result<List<TradePlanDTO>> executeRebalance(@PathVariable("id") Long userId) {
+        return Result.success(portfolioService.executeRebalance(userId));
     }
 }

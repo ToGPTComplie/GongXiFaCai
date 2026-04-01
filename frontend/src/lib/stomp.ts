@@ -6,6 +6,11 @@ interface StompSubscriptionOptions<T> {
 
 function buildWebSocketUrl(path: string) {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+
+  if (import.meta.env.DEV) {
+    return `${protocol}//${window.location.hostname}:8080${path}`;
+  }
+
   return `${protocol}//${window.location.host}${path}`;
 }
 

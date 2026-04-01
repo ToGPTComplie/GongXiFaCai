@@ -11,7 +11,9 @@ import type {
   UserPortfolio,
   WatchlistItem,
   WatchlistItemRequest,
+  TargetAllocation,
   TargetAllocationRequest,
+  RebalancePreviewPlan,
 } from "./types";
 
 const mockPortfolio: UserPortfolio = {
@@ -245,5 +247,17 @@ export async function saveTargetAllocations(
   userId: string,
   payload: TargetAllocationRequest[],
 ): Promise<void> {
-  await apiPost<void, TargetAllocationRequest[]>(`/api/v1/user/${userId}/portfolio/target`, payload);
+  await apiPost<void, TargetAllocationRequest[]>(`/api/v1/users/${userId}/portfolio/target`, payload);
+}
+
+export async function getTargetAllocations(userId: string, signal?: AbortSignal): Promise<TargetAllocation[]> {
+  return apiGet<TargetAllocation[]>(`/api/v1/users/${userId}/portfolio/target`, signal);
+}
+
+export async function previewRebalance(userId: string): Promise<RebalancePreviewPlan[]> {
+  return apiGet<RebalancePreviewPlan[]>(`/api/v1/users/${userId}/portfolio/rebalance-preview`);
+}
+
+export async function executeRebalance(userId: string): Promise<RebalancePreviewPlan[]> {
+  return apiPost<RebalancePreviewPlan[], undefined>(`/api/v1/users/${userId}/portfolio/rebalance-execute`, undefined);
 }
