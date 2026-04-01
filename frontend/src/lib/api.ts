@@ -14,6 +14,10 @@ import type {
   TargetAllocation,
   TargetAllocationRequest,
   RebalancePreviewPlan,
+  PerformancePeriod,
+  PerformanceSummaryDTO,
+  PortfolioPerformanceDTO,
+  RiskAnalysisResultDTO,
 } from "./types";
 
 const mockPortfolio: UserPortfolio = {
@@ -264,4 +268,31 @@ export async function previewRebalance(userId: string): Promise<RebalancePreview
 
 export async function executeRebalance(userId: string): Promise<RebalancePreviewPlan[]> {
   return apiPost<RebalancePreviewPlan[], undefined>(`/api/v1/users/${userId}/portfolio/rebalance-execute`, undefined);
+}
+
+export async function getPerformanceSummary(
+  userId: string,
+  period: PerformancePeriod,
+  signal?: AbortSignal,
+): Promise<PerformanceSummaryDTO> {
+  return apiGet<PerformanceSummaryDTO>(
+    `/api/v1/users/${userId}/portfolio/performance/summary?period=${period}`,
+    signal,
+  );
+}
+
+export async function getPortfolioPerformance(
+  userId: string,
+  startDate: string,
+  endDate: string,
+  signal?: AbortSignal,
+): Promise<PortfolioPerformanceDTO[]> {
+  return apiGet<PortfolioPerformanceDTO[]>(
+    `/api/v1/users/${userId}/portfolio/performance?startDate=${startDate}&endDate=${endDate}`,
+    signal,
+  );
+}
+
+export async function getRiskAnalysis(userId: string, signal?: AbortSignal): Promise<RiskAnalysisResultDTO> {
+  return apiGet<RiskAnalysisResultDTO>(`/api/v1/users/${userId}/portfolio/risk-analysis`, signal);
 }

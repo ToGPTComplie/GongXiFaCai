@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getRiskAnalysis } from "../lib/api";
 import type { RiskAnalysisResultDTO } from "../lib/types";
 
@@ -7,34 +7,91 @@ interface AIRiskAnalysisModalProps {
   onClose: () => void;
 }
 
+function RiskBadge({ level }: { level: string }) {
+  const color =
+    level === "HIGH" ? "#ef4444" : level === "MEDIUM" ? "#f59e0b" : "#22c55e";
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        padding: "0.15rem 0.55rem",
+        borderRadius: "999px",
+        fontSize: "0.75rem",
+        fontWeight: 700,
+        background: `${color}18`,
+        color,
+        border: `1px solid ${color}40`,
+      }}
+    >
+      {level}
+    </span>
+  );
+}
+
+function RiskSection({
+  title,
+  level,
+  issues,
+  suggestion,
+}: {
+  title: string;
+  level: string;
+  issues: string[];
+  suggestion: string;
+}) {
+  return (
+    <div
+      style={{
+        padding: "0.875rem",
+        borderRadius: "10px",
+        background: "#f8fafc",
+        border: "1px solid #e2e8f0",
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.5rem",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>{title}</span>
+        <RiskBadge level={level} />
+      </div>
+      {issues.length > 0 && (
+        <ul style={{ margin: 0, paddingLeft: "1.2rem", fontSize: "0.8rem", color: "#475569" }}>
+          {issues.map((issue, i) => (
+            <li key={i}>{issue}</li>
+          ))}
+        </ul>
+      )}
+      <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", borderTop: "1px solid #e2e8f0", paddingTop: "0.4rem" }}>
+        💡 {suggestion}
+      </p>
+    </div>
+  );
+}
+
 export function AIRiskAnalysisModal({ userId, onClose }: AIRiskAnalysisModalProps) {
   const [data, setData] = useState<RiskAnalysisResultDTO | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let isMounted = true;
     const controller = new AbortController();
 
-    async function loadRiskAnalysis() {
+    async function load() {
       try {
         const result = await getRiskAnalysis(userId, controller.signal);
-        if (isMounted) {
-          setData(result);
-        }
+        if (isMounted) setData(result);
       } catch (err: any) {
         if (err.name === "AbortError") return;
-        if (isMounted) {
-          setError(err);
-        }
+        if (isMounted) setError(err);
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     }
 
-    loadRiskAnalysis();
+    load();
 
     return () => {
       isMounted = false;
@@ -42,97 +99,153 @@ export function AIRiskAnalysisModal({ userId, onClose }: AIRiskAnalysisModalProp
     };
   }, [userId]);
 
-  function getRiskColor(level: string) {
-    if (level === "HIGH") return "#ef4444";
-    if (level === "MEDIUM") return "#f59e0b";
-    if (level === "LOW") return "#22c55e";
-    return "#64748b";
-  }
+  // Close on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [onClose]);
+
+  const overallColor =
+    data?.overallRiskLevel === "HIGH"
+      ? "#ef4444"
+      : data?.overallRiskLevel === "MEDIUM"
+      ? "#f59e0b"
+      : "#22c55e";
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 100 }}>
-      <div 
-        className="modal-content" 
-        onClick={(e) => e.stopPropagation()} 
-        style={{ maxWidth: "600px", width: "90%", maxHeight: "90vh", overflowY: "auto" }}
+    <div
+      ref={panelRef}
+      style={{
+        position: "fixed",
+        bottom: "4.5rem",
+        left: "1.5rem",
+        width: "360px",
+        maxHeight: "70vh",
+        background: "#ffffff",
+        borderRadius: "16px",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.08)",
+        border: "1px solid #e2e8f0",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        zIndex: 200,
+        animation: "slideUp 0.2s ease",
+      }}
+    >
+      <style>{`
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(16px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50%       { opacity: 0.4; }
+        }
+      `}</style>
+
+      {/* Header */}
+      <div
+        style={{
+          padding: "1rem 1.25rem",
+          background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexShrink: 0,
+        }}
       >
-        <header className="modal-header" style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "1rem", marginBottom: "1rem" }}>
-          <h2 style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span role="img" aria-label="AI">✨</span> AI Risk Analysis
-          </h2>
-          <button className="btn-close" onClick={onClose} aria-label="Close" style={{ border: "none", background: "none", fontSize: "1.5rem", cursor: "pointer" }}>
-            &times;
-          </button>
-        </header>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span style={{ fontSize: "1.1rem" }}>✨</span>
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: "0.95rem" }}>AI Risk Analysis</span>
+        </div>
+        <button
+          onClick={onClose}
+          style={{
+            background: "rgba(255,255,255,0.2)",
+            border: "none",
+            borderRadius: "6px",
+            color: "#fff",
+            width: "1.75rem",
+            height: "1.75rem",
+            cursor: "pointer",
+            fontSize: "1rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Body */}
+      <div style={{ overflowY: "auto", padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
 
         {isLoading && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "3rem 0" }}>
-            <div className="spinner" style={{ fontSize: "2rem", animation: "spin 1s linear infinite" }}>✨</div>
-            <p style={{ marginTop: "1rem", color: "#64748b" }}>AI is analyzing your portfolio...</p>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "2.5rem 0", gap: "0.75rem" }}>
+            <span style={{ fontSize: "2rem", animation: "pulse 1.2s ease-in-out infinite" }}>✨</span>
+            <p style={{ margin: 0, color: "#64748b", fontSize: "0.875rem" }}>
+              AI is analyzing your portfolio...
+            </p>
           </div>
         )}
 
         {error && (
-          <div className="alert alert-error">
-            <p>Failed to analyze risk: {error.message}</p>
+          <div style={{ padding: "1rem", background: "#fef2f2", borderRadius: "8px", color: "#dc2626", fontSize: "0.875rem" }}>
+            Failed to analyze: {error.message}
           </div>
         )}
 
         {!isLoading && !error && data && (
-          <div className="risk-analysis-results">
-            <div style={{ padding: "1rem", background: `${getRiskColor(data.overallRiskLevel)}15`, borderLeft: `4px solid ${getRiskColor(data.overallRiskLevel)}`, borderRadius: "4px", marginBottom: "1.5rem" }}>
-              <h3 style={{ color: getRiskColor(data.overallRiskLevel), marginBottom: "0.5rem" }}>
-                Overall Risk Level: {data.overallRiskLevel}
-              </h3>
-              <p>{data.overallSummary}</p>
+          <>
+            {/* Overall banner */}
+            <div
+              style={{
+                padding: "0.875rem",
+                borderRadius: "10px",
+                background: `${overallColor}10`,
+                border: `1px solid ${overallColor}30`,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+                <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>Overall Risk</span>
+                <RiskBadge level={data.overallRiskLevel} />
+              </div>
+              <p style={{ margin: 0, fontSize: "0.82rem", color: "#475569", lineHeight: 1.6 }}>
+                {data.overallSummary}
+              </p>
             </div>
 
-            <div className="risk-dimensions" style={{ display: "grid", gap: "1.5rem" }}>
-              <div className="risk-card" style={{ padding: "1rem", border: "1px solid #e2e8f0", borderRadius: "8px" }}>
-                <h4>Single Asset Concentration</h4>
-                <span className="badge" style={{ backgroundColor: `${getRiskColor(data.singleAssetConcentration.riskLevel)}20`, color: getRiskColor(data.singleAssetConcentration.riskLevel), padding: "0.25rem 0.5rem", borderRadius: "4px", fontSize: "0.8rem", fontWeight: "bold" }}>
-                  {data.singleAssetConcentration.riskLevel}
-                </span>
-                <ul style={{ marginTop: "0.5rem", paddingLeft: "1.5rem" }}>
-                  {data.singleAssetConcentration.issues.map((issue, i) => <li key={i}>{issue}</li>)}
-                </ul>
-                <p style={{ marginTop: "0.5rem", fontSize: "0.9rem", color: "#475569" }}><strong>Suggestion:</strong> {data.singleAssetConcentration.suggestion}</p>
-              </div>
-
-              <div className="risk-card" style={{ padding: "1rem", border: "1px solid #e2e8f0", borderRadius: "8px" }}>
-                <h4>Asset Type Concentration</h4>
-                <span className="badge" style={{ backgroundColor: `${getRiskColor(data.assetTypeConcentration.riskLevel)}20`, color: getRiskColor(data.assetTypeConcentration.riskLevel), padding: "0.25rem 0.5rem", borderRadius: "4px", fontSize: "0.8rem", fontWeight: "bold" }}>
-                  {data.assetTypeConcentration.riskLevel}
-                </span>
-                <ul style={{ marginTop: "0.5rem", paddingLeft: "1.5rem" }}>
-                  {data.assetTypeConcentration.issues.map((issue, i) => <li key={i}>{issue}</li>)}
-                </ul>
-                <p style={{ marginTop: "0.5rem", fontSize: "0.9rem", color: "#475569" }}><strong>Suggestion:</strong> {data.assetTypeConcentration.suggestion}</p>
-              </div>
-
-              <div className="risk-card" style={{ padding: "1rem", border: "1px solid #e2e8f0", borderRadius: "8px" }}>
-                <h4>Sector Concentration</h4>
-                <span className="badge" style={{ backgroundColor: `${getRiskColor(data.sectorConcentration.riskLevel)}20`, color: getRiskColor(data.sectorConcentration.riskLevel), padding: "0.25rem 0.5rem", borderRadius: "4px", fontSize: "0.8rem", fontWeight: "bold" }}>
-                  {data.sectorConcentration.riskLevel}
-                </span>
-                <ul style={{ marginTop: "0.5rem", paddingLeft: "1.5rem" }}>
-                  {data.sectorConcentration.issues.map((issue, i) => <li key={i}>{issue}</li>)}
-                </ul>
-                <p style={{ marginTop: "0.5rem", fontSize: "0.9rem", color: "#475569" }}><strong>Suggestion:</strong> {data.sectorConcentration.suggestion}</p>
-              </div>
-
-              <div className="risk-card" style={{ padding: "1rem", border: "1px solid #e2e8f0", borderRadius: "8px" }}>
-                <h4>Cash Proportion</h4>
-                <span className="badge" style={{ backgroundColor: `${getRiskColor(data.cashRatio.riskLevel)}20`, color: getRiskColor(data.cashRatio.riskLevel), padding: "0.25rem 0.5rem", borderRadius: "4px", fontSize: "0.8rem", fontWeight: "bold" }}>
-                  {data.cashRatio.riskLevel}
-                </span>
-                <ul style={{ marginTop: "0.5rem", paddingLeft: "1.5rem" }}>
-                  {data.cashRatio.issues.map((issue, i) => <li key={i}>{issue}</li>)}
-                </ul>
-                <p style={{ marginTop: "0.5rem", fontSize: "0.9rem", color: "#475569" }}><strong>Suggestion:</strong> {data.cashRatio.suggestion}</p>
-              </div>
-            </div>
-          </div>
+            <RiskSection
+              title="Single Asset Concentration"
+              level={data.singleAssetConcentration.riskLevel}
+              issues={data.singleAssetConcentration.issues}
+              suggestion={data.singleAssetConcentration.suggestion}
+            />
+            <RiskSection
+              title="Asset Type Concentration"
+              level={data.assetTypeConcentration.riskLevel}
+              issues={data.assetTypeConcentration.issues}
+              suggestion={data.assetTypeConcentration.suggestion}
+            />
+            <RiskSection
+              title="Sector Concentration"
+              level={data.sectorConcentration.riskLevel}
+              issues={data.sectorConcentration.issues}
+              suggestion={data.sectorConcentration.suggestion}
+            />
+            <RiskSection
+              title="Cash Proportion"
+              level={data.cashRatio.riskLevel}
+              issues={data.cashRatio.issues}
+              suggestion={data.cashRatio.suggestion}
+            />
+          </>
         )}
       </div>
     </div>

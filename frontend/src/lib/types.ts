@@ -155,3 +155,55 @@ export interface RebalancePreviewPlan {
   tradeAmount: number;
   tradeQuantity: number;
 }
+
+export type PerformancePeriod = "H24" | "D7" | "D30" | "D90" | "YTD" | "ALL";
+
+export interface PerformanceSummaryDTO {
+  period: string;
+  realizedPnl: number;
+  totalTrades: number;
+  winRate: number | null;
+  profitFactor: number | null;
+  avgHoldingDays: number | null;
+}
+
+export interface PortfolioPerformanceDTO {
+  date: string;
+  realizedPnl: number;
+  unrealizedPnl: number;
+  totalPnl: number;
+}
+
+export interface HoldingRiskDTO {
+  ticker: string;
+  assetType: string;
+  marketValue: number;
+  percentage: number;
+}
+
+export interface RiskDimensionDTO {
+  riskLevel: "HIGH" | "MEDIUM" | "LOW";
+  issues: string[];
+  suggestion: string;
+}
+
+export interface SectorConcentrationDTO {
+  riskLevel: "HIGH" | "MEDIUM" | "LOW";
+  sectors: Record<string, number>;
+  issues: string[];
+  suggestion: string;
+}
+
+export interface RiskAnalysisResultDTO {
+  totalAssets: number;
+  cashAmount: number;
+  cashPercentage: number;
+  holdings: HoldingRiskDTO[];
+  assetTypeBreakdown: Record<string, number>;
+  overallRiskLevel: "HIGH" | "MEDIUM" | "LOW";
+  overallSummary: string;
+  singleAssetConcentration: RiskDimensionDTO;
+  assetTypeConcentration: RiskDimensionDTO;
+  sectorConcentration: SectorConcentrationDTO;
+  cashRatio: RiskDimensionDTO;
+}
