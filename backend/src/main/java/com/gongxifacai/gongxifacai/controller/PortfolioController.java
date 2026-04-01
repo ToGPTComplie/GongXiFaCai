@@ -91,7 +91,8 @@ public class PortfolioController {
     public Result<List<TradePlanDTO>> executeRebalance(@PathVariable("id") Long userId) {
         return Result.success(portfolioService.executeRebalance(userId));
     }
-  
+
+    /*
      * AI 风险分析
      * GET /api/v1/users/{id}/portfolio/risk-analysis
      * 分析：单一资产集中度、资产类别集中度、行业集中度、现金比例
