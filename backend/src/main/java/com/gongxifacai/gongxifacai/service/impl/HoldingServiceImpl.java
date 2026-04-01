@@ -146,8 +146,7 @@ public class HoldingServiceImpl implements HoldingService {
     @Override
     public List<HoldingDTO> getUserHoldingsWithprice(Long userId) {
         try {
-            List<Holding> holdings = holdingRepository.findByUser_Id(userId);
-            System.out.println(holdings.get(0).getTicker());
+            List<Holding> holdings = holdingRepository.findByUser_IdAndQuantityGreaterThan(userId, BigDecimal.ZERO);
             if (holdings == null || holdings.isEmpty()) {
                 throw new BusinessException(CommonErrorCode.NOT_FOUND, "Holding not found");
             }
@@ -201,7 +200,7 @@ public class HoldingServiceImpl implements HoldingService {
 
     @Override
     public List<Holding> getUserHoldings(Long userId) {
-        return holdingRepository.findByUser_Id(userId);
+        return holdingRepository.findByUser_IdAndQuantityGreaterThan(userId, BigDecimal.ZERO);
     }
 
 
@@ -270,6 +269,11 @@ public class HoldingServiceImpl implements HoldingService {
         BigDecimal newQuantity = oldQuantity.subtract(quantity);
         if (BigDecimalUtil.isLessThanZero(newQuantity)) {
             throw new BusinessException("Insufficient holding quantity");
+        }
+
+        if (newQuantity.compareTo(BigDecimal.ZERO) == 0) {
+            holdingRepository.delete(holding);
+            return holding;
         }
 
         holding.setQuantity(newQuantity);

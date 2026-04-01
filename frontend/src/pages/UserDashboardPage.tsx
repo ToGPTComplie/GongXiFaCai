@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { AllocationChart } from "../components/AllocationChart";
-import { getUserHoldings, getUserInfo, getUserWatchlist } from "../lib/api";
+import { createWatchlistItem, getUserHoldings, getUserInfo, getUserWatchlist } from "../lib/api";
 import { formatCurrency } from "../lib/format";
 import { subscribeToTopic } from "../lib/stomp";
-import { readWatchlistCache, writeWatchlistCache } from "../lib/watchlist-cache";
-import type { Holding, HoldingRow, LiveHoldingSnapshot, UserInfo, UserPortfolio } from "../lib/types";
+import { readWatchlistCache, subscribeWatchlistCache, writeWatchlistCache } from "../lib/watchlist-cache";
+import type { Holding, HoldingRow, LiveHoldingSnapshot, UserInfo, UserPortfolio, WatchlistItem } from "../lib/types";
 
 const portfolioCache = new Map<string, UserPortfolio>();
 
@@ -76,11 +76,22 @@ function buildPortfolioModel(userInfo: UserInfo, holdings: Holding[], liveHoldin
 
 export function UserDashboardPage() {
   const { id = "1" } = useParams();
+  const navigate = useNavigate();
   const [portfolio, setPortfolio] = useState<UserPortfolio | null>(() => portfolioCache.get(id) ?? null);
+  const [watchlistItems, setWatchlistItems] = useState<WatchlistItem[]>(() => readWatchlistCache(id) ?? []);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [contentPhase, setContentPhase] = useState<"idle" | "updating">("idle");
   const [liveStatus, setLiveStatus] = useState<"offline" | "live">("offline");
+  const [openingTicker, setOpeningTicker] = useState<string | null>(null);
+
+  useEffect(() => {
+    setWatchlistItems(readWatchlistCache(id) ?? []);
+
+    return subscribeWatchlistCache(id, () => {
+      setWatchlistItems(readWatchlistCache(id) ?? []);
+    });
+  }, [id]);
 
   useEffect(() => {
     function handlePortfolioRefresh() {
@@ -200,6 +211,37 @@ export function UserDashboardPage() {
     );
   }
 
+  const watchlistByTicker = new Map(
+    watchlistItems.map((item) => [`${item.ticker.trim().toUpperCase()}-${item.assetType}`, item]),
+  );
+
+  async function handleOpenHoldingDetail(holding: HoldingRow) {
+    const key = `${holding.ticker.trim().toUpperCase()}-${holding.assetType}`;
+    const existingItem = watchlistByTicker.get(key);
+
+    if (existingItem) {
+      navigate(`/users/${id}/watchlist/${existingItem.id}`);
+      return;
+    }
+
+    try {
+      setOpeningTicker(key);
+      const createdItem = await createWatchlistItem(id, {
+        ticker: holding.ticker,
+        assetType: holding.assetType,
+        notes: "",
+      });
+      const nextItems = [createdItem, ...watchlistItems];
+      writeWatchlistCache(id, nextItems);
+      setWatchlistItems(nextItems);
+      navigate(`/users/${id}/watchlist/${createdItem.id}`);
+    } catch (openError) {
+      setError(openError instanceof Error ? openError.message : "Failed to open holding detail");
+    } finally {
+      setOpeningTicker(null);
+    }
+  }
+
   return (
     <section className={`page-layout content-fade ${contentPhase === "updating" ? "is-updating" : ""}`}>
       <header className="page-header">
@@ -283,9 +325,40 @@ export function UserDashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {portfolio.holdings.map((holding) => (
+                  {portfolio.holdings.map((holding) => {
+                    const watchlistItem = watchlistByTicker.get(`${holding.ticker.trim().toUpperCase()}-${holding.assetType}`);
+                    const isOpening = openingTicker === `${holding.ticker.trim().toUpperCase()}-${holding.assetType}`;
+
+                    return (
                     <tr key={holding.id}>
-                      <td>{holding.ticker}</td>
+                      <td>
+                        <div className="holding-ticker-cell">
+                          <span>{holding.ticker}</span>
+                          {watchlistItem ? (
+                            <Link
+                              className="holding-detail-link"
+                              to={`/users/${id}/watchlist/${watchlistItem.id}`}
+                              aria-label={`Open ${holding.ticker} detail page`}
+                              title={`Open ${holding.ticker} detail page`}
+                            >
+                              <span aria-hidden="true">📈</span>
+                            </Link>
+                          ) : (
+                            <button
+                              className="holding-detail-link"
+                              type="button"
+                              onClick={() => {
+                                void handleOpenHoldingDetail(holding);
+                              }}
+                              aria-label={`Create detail page for ${holding.ticker}`}
+                              title={`Create detail page for ${holding.ticker}`}
+                              disabled={isOpening}
+                            >
+                              <span aria-hidden="true">{isOpening ? "…" : "📈"}</span>
+                            </button>
+                          )}
+                        </div>
+                      </td>
                       <td>{holding.assetType}</td>
                       <td>{holding.quantity}</td>
                       <td>{formatCurrency(holding.averageCost)}</td>
@@ -299,11 +372,12 @@ export function UserDashboardPage() {
                               : "loss-value"
                             : undefined
                         }
-                      >
+                        >
                         {holding.pl !== null && holding.pl !== undefined ? formatCurrency(holding.pl) : "—"}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

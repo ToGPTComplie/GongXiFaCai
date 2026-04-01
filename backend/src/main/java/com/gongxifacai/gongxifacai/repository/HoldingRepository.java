@@ -10,4 +10,5 @@ import java.util.List;
 @Repository
 public interface HoldingRepository extends JpaRepository<Holding, Long> {
     List<Holding> findByUser_Id(Long userId);
+    List<Holding> findByUser_IdAndQuantityGreaterThan(Long userId, java.math.BigDecimal quantity);
 }

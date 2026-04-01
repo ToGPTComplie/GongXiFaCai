@@ -178,6 +178,10 @@ export async function getUserHoldings(userId: string, signal?: AbortSignal): Pro
   return apiGet<Holding[]>(`/api/v1/users/${userId}/holdings`, signal);
 }
 
+export async function getMarketPrice(userId: string, ticker: string, signal?: AbortSignal): Promise<number> {
+  return apiGet<number>(`/api/v1/users/${userId}/market-price/${ticker}`, signal);
+}
+
 export async function getUserTradeTransactions(
   userId: string,
   params: PaginationParams = {},

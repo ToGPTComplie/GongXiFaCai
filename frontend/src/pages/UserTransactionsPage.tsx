@@ -18,6 +18,10 @@ type TransactionsCacheEntry = {
   fund: Record<number, PageResponse<FundTransaction>>;
 };
 
+function getTransactionTone(transactionType: "BUY" | "SELL" | "DEPOSIT" | "WITHDRAW") {
+  return transactionType === "BUY" || transactionType === "DEPOSIT" ? "positive" : "negative";
+}
+
 const transactionsCache = new Map<string, TransactionsCacheEntry>();
 
 function getTransactionsViewStorageKey(userId: string) {
@@ -332,7 +336,11 @@ export function UserTransactionsPage() {
                     {currentTradePage?.content.map((transaction) => (
                       <tr key={transaction.id}>
                         <td>{formatBackendDateTime(transaction.createdAt)}</td>
-                        <td>{transaction.transactionType}</td>
+                        <td>
+                          <span className={`transaction-chip ${getTransactionTone(transaction.transactionType)}`}>
+                            {transaction.transactionType}
+                          </span>
+                        </td>
                         <td>{transaction.ticker}</td>
                         <td>{transaction.assetType}</td>
                         <td>{transaction.quantity}</td>
@@ -356,7 +364,11 @@ export function UserTransactionsPage() {
                     {currentFundPage?.content.map((transaction) => (
                       <tr key={transaction.id}>
                         <td>{formatBackendDateTime(transaction.createdAt)}</td>
-                        <td>{transaction.transactionType}</td>
+                        <td>
+                          <span className={`transaction-chip ${getTransactionTone(transaction.transactionType)}`}>
+                            {transaction.transactionType}
+                          </span>
+                        </td>
                         <td>{formatCurrency(transaction.totalAmount)}</td>
                         <td>{transaction.description || "-"}</td>
                       </tr>

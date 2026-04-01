@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useParams, useSearchParams } from "react-router-dom";
+import { TradingViewMiniChartWarmup } from "./components/TradingViewMiniChartWarmup";
 import { TransactionModal } from "./components/TransactionModal";
 
 function getSidebarStorageKey(userId: string) {
@@ -98,6 +99,7 @@ export function AppShell() {
       <main className="content">
         <Outlet />
       </main>
+      <TradingViewMiniChartWarmup userId={id} />
       {showModal ? <TransactionModal userId={id} /> : null}
     </div>
   );

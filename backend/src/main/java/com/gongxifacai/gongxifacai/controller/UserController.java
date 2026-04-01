@@ -45,6 +45,14 @@ public class UserController {
         return Result.success(holdings);
     }
 
+    @GetMapping("/api/v1/users/{id}/market-price/{ticker}")
+    public Result<BigDecimal> getMarketPrice(@PathVariable Long id, @PathVariable String ticker) {
+        if (!userService.existsById(id)) {
+            throw new BusinessException(CommonErrorCode.USER_NOT_FOUND);
+        }
+        return Result.success(holdingService.getMarketPrice(ticker));
+    }
+  
     @GetMapping("/api/v1/users/{id}/holdings/top-bottom")
     public Result<TopBottomHoldingsResponseDTO> getTopAndBottomHoldings(@PathVariable Long id) {
         return Result.success(holdingService.getTopAndBottomHoldings(id));
