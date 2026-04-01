@@ -9,7 +9,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class GongxifacaiApplication {
 
     public static void main(String[] args) {
+
         SpringApplication.run(GongxifacaiApplication.class, args);
+
     }
 
 }
