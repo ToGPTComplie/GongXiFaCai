@@ -26,7 +26,7 @@ public class TargetAllocation extends BaseEntity {
     private String ticker;
 
     @Column(name = "target_percentage", nullable = false)
-    @DecimalMin(value = "0.0", inclusive = false, message = "目标比例必须大于0")
-    @DecimalMax(value = "1.0", inclusive = false, message = "目标比例必须小于1")
+    @DecimalMin(value = "0.0",  message = "目标比例必须大于等于0")
+    @DecimalMax(value = "1.0",  message = "目标比例必须小于等于1")
     private BigDecimal targetPercentage;
 }
