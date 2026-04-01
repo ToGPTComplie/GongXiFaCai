@@ -69,4 +69,5 @@ public class HoldingPushServiceImpl implements HoldingPushService {
             log.warn("Push holdings failed for userId={}", pushUserId, ex);
         }
     }
+
 }

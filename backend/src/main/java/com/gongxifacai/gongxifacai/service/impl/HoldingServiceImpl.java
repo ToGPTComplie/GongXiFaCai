@@ -3,6 +3,7 @@ package com.gongxifacai.gongxifacai.service.impl;
 import com.gongxifacai.gongxifacai.common.CommonErrorCode;
 import com.gongxifacai.gongxifacai.dto.HoldingDTO;
 import com.gongxifacai.gongxifacai.dto.KLineCandleDTO;
+import com.gongxifacai.gongxifacai.dto.TopBottomHoldingsResponseDTO;
 import com.gongxifacai.gongxifacai.entity.Holding;
 import com.gongxifacai.gongxifacai.exception.BusinessException;
 import com.gongxifacai.gongxifacai.repository.HoldingRepository;
@@ -24,9 +25,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 @Service
@@ -175,6 +176,26 @@ public class HoldingServiceImpl implements HoldingService {
             throw new BusinessException(CommonErrorCode.SYSTEM_ERROR, "Failed to load holdings valuation");
         }
 
+    }
+
+    @Override
+    public TopBottomHoldingsResponseDTO getTopAndBottomHoldings(Long userId) {
+        List<HoldingDTO> holdings = getUserHoldingsWithprice(userId);
+        Comparator<HoldingDTO> byProfitLoss = Comparator.comparing(
+                holding -> holding.getPl() == null ? BigDecimal.ZERO : holding.getPl()
+        );
+
+        List<HoldingDTO> topProfitable = holdings.stream()
+                .sorted(byProfitLoss.reversed())
+                .limit(3)
+                .toList();
+
+        List<HoldingDTO> topLosing = holdings.stream()
+                .sorted(byProfitLoss)
+                .limit(3)
+                .toList();
+
+        return new TopBottomHoldingsResponseDTO(topProfitable, topLosing);
     }
 
 

@@ -2,6 +2,7 @@ package com.gongxifacai.gongxifacai.service;
 
 import com.gongxifacai.gongxifacai.dto.HoldingDTO;
 import com.gongxifacai.gongxifacai.dto.KLineCandleDTO;
+import com.gongxifacai.gongxifacai.dto.TopBottomHoldingsResponseDTO;
 import com.gongxifacai.gongxifacai.entity.Holding;
 
 import java.math.BigDecimal;
@@ -12,6 +13,7 @@ public interface HoldingService {
     List<Holding> getUserHoldings(Long userId);
 
     List<HoldingDTO> getUserHoldingsWithprice(Long userId);
+    TopBottomHoldingsResponseDTO getTopAndBottomHoldings(Long userId);
 
     List<KLineCandleDTO> getKLineData(Long userId, String symbol);
 
