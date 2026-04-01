@@ -51,6 +51,15 @@ public class PortfolioController {
     }
 
     /**
+     * 获取用户当前保存的目标资产配置
+     * GET /api/v1/users/{id}/portfolio/target
+     */
+    @GetMapping("/{id}/portfolio/target")
+    public Result<List<TargetAllocationDTO>> getTargetAllocations(@PathVariable("id") Long userId) {
+        return Result.success(portfolioService.getTargetAllocations(userId));
+    }
+
+    /**
      * 设置用户的目标资产配置
      * POST /api/v1/users/{id}/portfolio/target
      */
@@ -75,6 +84,14 @@ public class PortfolioController {
     }
 
     /**
+     * 执行再平衡
+     * POST /api/v1/users/{id}/portfolio/rebalance-execute
+     */
+    @PostMapping("/{id}/portfolio/rebalance-execute")
+    public Result<List<TradePlanDTO>> executeRebalance(@PathVariable("id") Long userId) {
+        return Result.success(portfolioService.executeRebalance(userId));
+    }
+  
      * AI 风险分析
      * GET /api/v1/users/{id}/portfolio/risk-analysis
      * 分析：单一资产集中度、资产类别集中度、行业集中度、现金比例

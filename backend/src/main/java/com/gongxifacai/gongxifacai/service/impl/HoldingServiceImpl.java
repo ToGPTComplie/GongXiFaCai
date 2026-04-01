@@ -51,6 +51,7 @@ public class HoldingServiceImpl implements HoldingService {
             HttpResponse<String> response =
                     HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
+            System.out.println(response);
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 throw new BusinessException(CommonErrorCode.SYSTEM_ERROR, "Failed to fetch market price");
             }
@@ -145,6 +146,7 @@ public class HoldingServiceImpl implements HoldingService {
     public List<HoldingDTO> getUserHoldingsWithprice(Long userId) {
         try {
             List<Holding> holdings = holdingRepository.findByUser_Id(userId);
+            System.out.println(holdings.get(0).getTicker());
             if (holdings == null || holdings.isEmpty()) {
                 throw new BusinessException(CommonErrorCode.NOT_FOUND, "Holding not found");
             }

@@ -78,13 +78,13 @@ public class UserController {
             throw new BusinessException(CommonErrorCode.SYSTEM_ERROR, "Failed to fetch market price");
         }
     }
-//    @GetMapping("/api/v1/users/{id}/holdings")
-//    public Result<List<Holding>> getUserHoldings(@PathVariable Long id) {
-//        List<Holding> holdings = holdingService.getUserHoldings(id);
-//        return Result.success(holdings);
-//    }
+    @GetMapping("/api/v1/users/{id}/holdings")
+    public Result<List<Holding>> getUserHoldings(@PathVariable Long id) {
+        List<Holding> holdings = holdingService.getUserHoldings(id);
+        return Result.success(holdings);
+    }
 
-    @GetMapping("/api/v1/users/{id}/{symbol}")
+    @GetMapping("/api/v1/users/{id}/kline/{symbol}")
     public Result<List<KLineCandleDTO>> getKLineData(@PathVariable Long id, @PathVariable String symbol) {
         return Result.success(holdingService.getKLineData(id, symbol));
     }

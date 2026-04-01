@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -25,8 +27,12 @@ public class TargetAllocation extends BaseEntity {
     @Column(name = "ticker", nullable = false)
     private String ticker;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "asset_type")
+    private Holding.AssetType assetType;
+
     @Column(name = "target_percentage", nullable = false)
-    @DecimalMin(value = "0.0", inclusive = false, message = "目标比例必须大于0")
-    @DecimalMax(value = "1.0", inclusive = false, message = "目标比例必须小于1")
+    @DecimalMin(value = "0.0",  message = "目标比例必须大于等于0")
+    @DecimalMax(value = "1.0",  message = "目标比例必须小于等于1")
     private BigDecimal targetPercentage;
 }

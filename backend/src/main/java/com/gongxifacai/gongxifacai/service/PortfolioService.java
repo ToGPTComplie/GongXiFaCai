@@ -4,10 +4,11 @@ import com.gongxifacai.gongxifacai.dto.TargetAllocationDTO;
 import com.gongxifacai.gongxifacai.dto.TradePlanDTO;
 import com.gongxifacai.gongxifacai.entity.TargetAllocation;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 public interface PortfolioService {
+    List<TargetAllocationDTO> getTargetAllocations(Long userId);
+
     /**
      * 设置用户的目标配置比例
      */
@@ -18,9 +19,9 @@ public interface PortfolioService {
      */
     List<TradePlanDTO> previewRebalance(Long userId);
 
-    // /**
-    //  * 实际执行再平衡
-    //  */
-    // void executeRebalance(Long userId);
+    /**
+     * 实际执行再平衡
+     */
+    List<TradePlanDTO> executeRebalance(Long userId);
 
 }

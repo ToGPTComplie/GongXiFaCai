@@ -1,13 +1,16 @@
 package com.gongxifacai.gongxifacai.service.impl;
 
+import com.gongxifacai.gongxifacai.dto.TargetAllocationDTO;
 import com.gongxifacai.gongxifacai.dto.TradePlanDTO;
 import com.gongxifacai.gongxifacai.entity.Holding;
 import com.gongxifacai.gongxifacai.entity.TargetAllocation;
+import com.gongxifacai.gongxifacai.entity.TradeTransaction;
 import com.gongxifacai.gongxifacai.entity.User;
 import com.gongxifacai.gongxifacai.exception.BusinessException;
 import com.gongxifacai.gongxifacai.repository.TargetAllocationRepository;
 import com.gongxifacai.gongxifacai.service.HoldingService;
 import com.gongxifacai.gongxifacai.service.PortfolioService;
+import com.gongxifacai.gongxifacai.service.TradeTransactionService;
 import com.gongxifacai.gongxifacai.service.UserService;
 import com.gongxifacai.gongxifacai.util.BigDecimalUtil;
 
@@ -32,6 +35,15 @@ public class PortfolioServiceImpl implements PortfolioService {
     private final HoldingService holdingService;
     private final TargetAllocationRepository targetAllocationRepository;
     private final UserService userService;
+    private final TradeTransactionService tradeTransactionService;
+
+    @Override
+    public List<TargetAllocationDTO> getTargetAllocations(Long userId) {
+        userService.getUser(userId);
+        return targetAllocationRepository.findByUser_Id(userId).stream()
+                .map(TargetAllocationDTO::fromEntity)
+                .toList();
+    }
 
     @Override
     @Transactional
@@ -60,7 +72,7 @@ public class PortfolioServiceImpl implements PortfolioService {
 
         List<Holding> holdings = holdingService.getUserHoldings(userId);
 
-        List<TargetAllocation> targetAllocations = targetAllocationRepository.findByUserId(userId);
+        List<TargetAllocation> targetAllocations = targetAllocationRepository.findByUser_Id(userId);
 
         Map<String, Holding> holdingMap = holdings.stream().
                 collect(Collectors.toMap(Holding::getTicker, h -> h));
@@ -133,8 +145,13 @@ public class PortfolioServiceImpl implements PortfolioService {
 
             TradePlanDTO tradePlanDTO = new TradePlanDTO();
             tradePlanDTO.setTicker(ticker);
-            tradePlanDTO.setTradeQuantity(diffQuantity);
-            tradePlanDTO.setTradeAmount(diffAmount);
+            tradePlanDTO.setAssetType(resolveAssetType(currentHolding, targetAllocation));
+            tradePlanDTO.setTransactionType(diffAmount.signum() >= 0
+                    ? TradeTransaction.TransactionType.BUY
+                    : TradeTransaction.TransactionType.SELL);
+            tradePlanDTO.setMarketPrice(currentMarketPrice);
+            tradePlanDTO.setTradeQuantity(diffQuantity.abs());
+            tradePlanDTO.setTradeAmount(diffAmount.abs());
             tradePlanDTO.setCurrentPercentage(currentPercentage);
             tradePlanDTO.setTargetPercentage(targetPercentage);
             tradePlanDTO.setDiffPercentage(diffPercentage);
@@ -144,8 +161,57 @@ public class PortfolioServiceImpl implements PortfolioService {
         return tradePlanDTOs;
     }
 
-    // @Override
-    // public void executeRebalance(Long userId) {
+    @Override
+    @Transactional
+    public List<TradePlanDTO> executeRebalance(Long userId) {
+        List<TradePlanDTO> tradePlans = previewRebalance(userId);
 
-    // }
+        List<TradePlanDTO> sellPlans = tradePlans.stream()
+                .filter(plan -> plan.getTransactionType() == TradeTransaction.TransactionType.SELL)
+                .toList();
+
+        List<TradePlanDTO> buyPlans = tradePlans.stream()
+                .filter(plan -> plan.getTransactionType() == TradeTransaction.TransactionType.BUY)
+                .toList();
+
+        for (TradePlanDTO plan : sellPlans) {
+            tradeTransactionService.processTrade(
+                    userId,
+                    plan.getTicker(),
+                    plan.getAssetType(),
+                    TradeTransaction.TransactionType.SELL,
+                    plan.getTradeQuantity(),
+                    plan.getMarketPrice()
+            );
+        }
+
+        for (TradePlanDTO plan : buyPlans) {
+            if (plan.getAssetType() == null) {
+                throw new BusinessException("缺少资产类型，无法执行买入");
+            }
+
+            tradeTransactionService.processTrade(
+                    userId,
+                    plan.getTicker(),
+                    plan.getAssetType(),
+                    TradeTransaction.TransactionType.BUY,
+                    plan.getTradeQuantity(),
+                    plan.getMarketPrice()
+            );
+        }
+
+        return tradePlans;
+    }
+
+    private Holding.AssetType resolveAssetType(Holding currentHolding, TargetAllocation targetAllocation) {
+        if (currentHolding != null && currentHolding.getAssetType() != null) {
+            return currentHolding.getAssetType();
+        }
+
+        if (targetAllocation != null) {
+            return targetAllocation.getAssetType();
+        }
+
+        return null;
+    }
 }

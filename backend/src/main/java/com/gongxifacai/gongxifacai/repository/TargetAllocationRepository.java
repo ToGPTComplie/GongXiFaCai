@@ -10,7 +10,7 @@ import java.util.List;
 @Repository
 public interface TargetAllocationRepository extends JpaRepository<TargetAllocation, Long> {
 
-    List<TargetAllocation> findByUserId(Long user_id);
+    List<TargetAllocation> findByUser_Id(Long userId);
 
     void deleteAllByUser_Id(Long userId);
 }

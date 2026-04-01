@@ -9,3 +9,4 @@ Thumbs.db
 
 # Other
 node_modules/
+dist/
