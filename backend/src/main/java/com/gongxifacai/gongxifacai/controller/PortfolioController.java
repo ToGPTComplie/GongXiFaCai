@@ -3,6 +3,7 @@ package com.gongxifacai.gongxifacai.controller;
 import com.gongxifacai.gongxifacai.common.Result;
 import com.gongxifacai.gongxifacai.dto.PortfolioPerformanceDTO;
 import com.gongxifacai.gongxifacai.dto.TargetAllocationDTO;
+import com.gongxifacai.gongxifacai.dto.TradePlanDTO;
 import com.gongxifacai.gongxifacai.entity.TargetAllocation;
 import com.gongxifacai.gongxifacai.scheduler.MarketCloseScheduler;
 import com.gongxifacai.gongxifacai.service.PortfolioService;
@@ -59,5 +60,14 @@ public class PortfolioController {
                 .toList();
         portfolioService.setTargetAllocations(userId, targetAllocations);
         return Result.success(null);
+    }
+
+    /**
+     * 预览再平衡交易计划
+     * GET /api/v1/users/{id}/portfolio/rebalance-preview
+     */
+    @GetMapping("/{id}/portfolio/rebalance-preview")
+    public Result<List<TradePlanDTO>> previewRebalance(@PathVariable("id") Long userId) {
+        return Result.success(portfolioService.previewRebalance(userId));
     }
 }
