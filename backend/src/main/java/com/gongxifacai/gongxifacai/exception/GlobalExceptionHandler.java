@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import static com.gongxifacai.gongxifacai.common.CommonErrorCode.BAD_REQUEST;
 
@@ -39,6 +40,17 @@ public class GlobalExceptionHandler {
         String message = e.getBindingResult().getFieldError() != null ?
                 e.getBindingResult().getFieldError().getDefaultMessage() : "参数校验失败";
         log.warn("参数校验异常: {}", message);
+        return Result.error(BAD_REQUEST.getCode(), message);
+    }
+
+    /**
+     * 处理枚举等类型转换失败（如传入非法的 period 值）
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Result<Void> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException e) {
+        String message = String.format("无效的参数值 '%s'，参数 '%s'", e.getValue(), e.getName());
+        log.warn("参数类型不匹配: {}", message);
         return Result.error(BAD_REQUEST.getCode(), message);
     }
 
