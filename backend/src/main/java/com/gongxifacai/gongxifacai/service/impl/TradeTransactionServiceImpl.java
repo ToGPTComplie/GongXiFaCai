@@ -49,6 +49,17 @@ public class TradeTransactionServiceImpl implements TradeTransactionService {
         if (!BigDecimalUtil.isGreaterThanZero(quantity) || !BigDecimalUtil.isGreaterThanZero(price)) {
             throw new BusinessException(CommonErrorCode.BAD_REQUEST, "交易数量和价格必须大于0");
         }
+
+        // 交易保护：检查价格和市场价格偏差是否大于1%
+        BigDecimal marketPrice = holdingService.getMarketPrice(ticker);
+        if (marketPrice != null && BigDecimalUtil.isGreaterThanZero(marketPrice)) {
+            BigDecimal diff = price.subtract(marketPrice).abs();
+            BigDecimal threshold = marketPrice.multiply(new BigDecimal("0.01"));
+            if (diff.compareTo(threshold) > 0) {
+                throw new BusinessException("价格已更新");
+            }
+        }
+
         // 获取用户
         User user = userService.getUser(userId);
 
