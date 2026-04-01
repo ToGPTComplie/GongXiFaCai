@@ -218,4 +218,39 @@ class TradeTransactionServiceImplTest {
 
         assertEquals("持仓不足", exception.getMessage());
     }
+
+    @Test
+    void processTrade_PriceDeviationExceeds1Percent_ThrowsException() {
+        Long userId = 1L;
+        String ticker = "AAPL";
+        BigDecimal quantity = new BigDecimal("10.0000");
+        BigDecimal price = new BigDecimal("51.0000"); // 2% deviation
+        BigDecimal marketPrice = new BigDecimal("50.0000");
+
+        when(holdingService.getMarketPrice(ticker)).thenReturn(marketPrice);
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> {
+            tradeTransactionService.processTrade(userId, ticker, Holding.AssetType.STOCK, TradeTransaction.TransactionType.BUY, quantity, price);
+        });
+
+        assertEquals("价格已更新", exception.getMessage());
+    }
+
+    @Test
+    void processTrade_PriceDeviationWithin1Percent_Success() {
+        Long userId = 1L;
+        String ticker = "AAPL";
+        BigDecimal quantity = new BigDecimal("10.0000");
+        BigDecimal price = new BigDecimal("50.2000"); // 0.4% deviation
+        BigDecimal marketPrice = new BigDecimal("50.0000");
+
+        when(holdingService.getMarketPrice(ticker)).thenReturn(marketPrice);
+        when(userService.getUser(userId)).thenReturn(testUser);
+        when(tradeTransactionRepository.save(any(TradeTransaction.class))).thenAnswer(i -> i.getArguments()[0]);
+
+        TradeTransaction result = tradeTransactionService.processTrade(userId, ticker, Holding.AssetType.STOCK, TradeTransaction.TransactionType.BUY, quantity, price);
+
+        assertNotNull(result);
+        assertEquals(0, price.compareTo(result.getPrice()));
+    }
 }
