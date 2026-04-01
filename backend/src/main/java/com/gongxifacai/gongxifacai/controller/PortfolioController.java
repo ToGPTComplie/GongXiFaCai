@@ -2,8 +2,12 @@ package com.gongxifacai.gongxifacai.controller;
 
 import com.gongxifacai.gongxifacai.common.Result;
 import com.gongxifacai.gongxifacai.dto.PortfolioPerformanceDTO;
+import com.gongxifacai.gongxifacai.dto.TargetAllocationDTO;
+import com.gongxifacai.gongxifacai.entity.TargetAllocation;
 import com.gongxifacai.gongxifacai.scheduler.MarketCloseScheduler;
+import com.gongxifacai.gongxifacai.service.PortfolioService;
 import com.gongxifacai.gongxifacai.service.PortfolioSnapshotService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +22,7 @@ public class PortfolioController {
 
     private final PortfolioSnapshotService portfolioSnapshotService;
     private final MarketCloseScheduler marketCloseScheduler;
+    private final PortfolioService portfolioService;
 
     /**
      * 查询用户 Portfolio 折线图数据
@@ -40,7 +45,19 @@ public class PortfolioController {
         marketCloseScheduler.generateDailySnapshots();
         return Result.success(null);
     }
+
+    /**
+     * 设置用户的目标资产配置
+     * POST /api/v1/users/{id}/portfolio/target
+     */
+    @PostMapping("/{id}/portfolio/target")
+    public Result<Void> setTargetAllocations(
+            @PathVariable("id") Long userId,
+            @Valid @RequestBody List<TargetAllocationDTO> targetAllocationDTOs) {
+        List<TargetAllocation> targetAllocations = targetAllocationDTOs.stream()
+                .map(TargetAllocationDTO::toTargetAllocation)
+                .toList();
+        portfolioService.setTargetAllocations(userId, targetAllocations);
+        return Result.success(null);
+    }
 }
-
-
-
