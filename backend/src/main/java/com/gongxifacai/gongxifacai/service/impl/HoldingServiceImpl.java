@@ -195,11 +195,6 @@ public class HoldingServiceImpl implements HoldingService {
     }
 
     @Override
-    public BigDecimal getMarketPrice(String ticker) {
-        return null;
-    }
-
-    @Override
     @Transactional
     public Holding getOrCreateHolding(Long userId, String ticker, Holding.AssetType assetType) {
         List<Holding> holdings = getUserHoldings(userId);
