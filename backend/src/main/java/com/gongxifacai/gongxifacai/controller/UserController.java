@@ -84,6 +84,15 @@ public class UserController {
         return Result.success(holdings);
     }
 
+    @GetMapping("/api/v1/users/{id}/market-price/{ticker}")
+    public Result<BigDecimal> getMarketPrice(@PathVariable Long id, @PathVariable String ticker) {
+        if (!userService.existsById(id)) {
+            throw new BusinessException(CommonErrorCode.USER_NOT_FOUND);
+        }
+
+        return Result.success(holdingService.getMarketPrice(ticker));
+    }
+
     @GetMapping("/api/v1/users/{id}/kline/{symbol}")
     public Result<List<KLineCandleDTO>> getKLineData(@PathVariable Long id, @PathVariable String symbol) {
         return Result.success(holdingService.getKLineData(id, symbol));

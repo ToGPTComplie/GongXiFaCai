@@ -7,9 +7,5 @@ export function buildTradingViewSymbol(item: WatchlistItem): string | null {
     return null;
   }
 
-  if (item.assetType === "STOCK") {
-    return `NASDAQ:${ticker}`;
-  }
-
-  return null;
+  return `NASDAQ:${ticker}`;
 }

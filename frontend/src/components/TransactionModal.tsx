@@ -1,7 +1,8 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { createFundTransaction, createTradeTransaction } from "../lib/api";
+import { createFundTransaction, createTradeTransaction, getUserHoldings } from "../lib/api";
 import { formatCurrency } from "../lib/format";
+import type { Holding } from "../lib/types";
 import { CustomSelect } from "./CustomSelect";
 
 interface TransactionModalProps {
@@ -11,7 +12,7 @@ interface TransactionModalProps {
 export function TransactionModal({ userId }: TransactionModalProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [transactionType, setTransactionType] = useState("BUY");
+  const [transactionType, setTransactionType] = useState("DEPOSIT");
   const [assetType, setAssetType] = useState("STOCK");
   const [ticker, setTicker] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -20,24 +21,22 @@ export function TransactionModal({ userId }: TransactionModalProps) {
   const [description, setDescription] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [holdingsError, setHoldingsError] = useState<string | null>(null);
 
   const isCashAction = transactionType === "DEPOSIT" || transactionType === "WITHDRAW";
   const submitLabel = useMemo(() => {
     switch (transactionType) {
-      case "BUY":
-        return "Confirm Buy";
-      case "SELL":
-        return "Confirm Sell";
       case "DEPOSIT":
         return "Confirm Deposit";
       case "WITHDRAW":
         return "Confirm Withdraw";
       default:
-        return "Submit";
+      return "Submit";
     }
   }, [transactionType]);
 
-  const calculatedTotal = !isCashAction && quantity && price ? Number(quantity) * Number(price) : null;
+  const submitToneClass = transactionType === "DEPOSIT" ? "transaction-action-button positive" : "transaction-action-button negative";
+
   const cashAmount = isCashAction && amount ? Number(amount) : null;
 
   function closeModal() {
@@ -68,29 +67,6 @@ export function TransactionModal({ userId }: TransactionModalProps) {
           transactionType: transactionType as "DEPOSIT" | "WITHDRAW",
           amount: parsedAmount,
           description: description.trim() || undefined,
-        });
-      } else {
-        const parsedQuantity = Number(quantity);
-        const parsedPrice = Number(price);
-
-        if (!ticker.trim()) {
-          throw new Error("Ticker is required");
-        }
-
-        if (Number.isNaN(parsedQuantity) || parsedQuantity <= 0) {
-          throw new Error("Quantity must be greater than 0");
-        }
-
-        if (Number.isNaN(parsedPrice) || parsedPrice <= 0) {
-          throw new Error("Price must be greater than 0");
-        }
-
-        await createTradeTransaction(userId, {
-          ticker: ticker.trim().toUpperCase(),
-          assetType: assetType as "STOCK" | "BOND",
-          transactionType: transactionType as "BUY" | "SELL",
-          quantity: parsedQuantity,
-          price: parsedPrice,
         });
       }
 
@@ -126,131 +102,56 @@ export function TransactionModal({ userId }: TransactionModalProps) {
               onChange={(nextValue) => {
                 resetError();
                 setTransactionType(nextValue);
-
-                if (nextValue === "DEPOSIT" || nextValue === "WITHDRAW") {
-                  setAssetType("STOCK");
-                }
               }}
               options={[
-                { value: "BUY", label: "Buy" },
-                { value: "SELL", label: "Sell" },
                 { value: "DEPOSIT", label: "Deposit" },
                 { value: "WITHDRAW", label: "Withdraw" },
               ]}
             />
 
-            {isCashAction ? (
-              <>
-                <label className="field-group">
-                  <span className="field-label">Amount</span>
-                  <input
-                    placeholder="10000.00"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={amount}
-                    onChange={(event) => {
-                      resetError();
-                      setAmount(event.target.value);
-                    }}
-                    disabled={isSubmitting}
-                  />
-                </label>
-                <label className="field-group modal-grid-span-2">
-                  <span className="field-label">Description</span>
-                  <input
-                    placeholder="Salary transfer or cash adjustment"
-                    value={description}
-                    onChange={(event) => {
-                      resetError();
-                      setDescription(event.target.value);
-                    }}
-                    disabled={isSubmitting}
-                  />
-                </label>
-              </>
-            ) : (
-              <>
-                <label className="field-group">
-                  <span className="field-label">Ticker</span>
-                  <input
-                    placeholder="AAPL"
-                    value={ticker}
-                    onChange={(event) => {
-                      resetError();
-                      setTicker(event.target.value);
-                    }}
-                    disabled={isSubmitting}
-                  />
-                </label>
-                <CustomSelect
-                  label="Asset type"
-                  value={assetType}
-                  disabled={isSubmitting}
-                  onChange={(nextValue) => {
-                    resetError();
-                    setAssetType(nextValue);
-                  }}
-                  options={[
-                    { value: "STOCK", label: "Stock" },
-                    { value: "BOND", label: "Bond" },
-                  ]}
-                />
-                <label className="field-group">
-                  <span className="field-label">Quantity</span>
-                  <input
-                    placeholder="10"
-                    type="number"
-                    min="0"
-                    step="0.0001"
-                    value={quantity}
-                    onChange={(event) => {
-                      resetError();
-                      setQuantity(event.target.value);
-                    }}
-                    disabled={isSubmitting}
-                  />
-                </label>
-                <label className="field-group">
-                  <span className="field-label">Price</span>
-                  <input
-                    placeholder="150.00"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={price}
-                    onChange={(event) => {
-                      resetError();
-                      setPrice(event.target.value);
-                    }}
-                    disabled={isSubmitting}
-                  />
-                </label>
-              </>
-            )}
+            <label className="field-group">
+              <span className="field-label">Amount</span>
+              <input
+                placeholder="10000.00"
+                type="number"
+                min="0"
+                step="0.01"
+                value={amount}
+                onChange={(event) => {
+                  resetError();
+                  setAmount(event.target.value);
+                }}
+                disabled={isSubmitting}
+              />
+            </label>
+            <label className="field-group modal-grid-span-2">
+              <span className="field-label">Description</span>
+              <input
+                placeholder="Salary transfer or cash adjustment"
+                value={description}
+                onChange={(event) => {
+                  resetError();
+                  setDescription(event.target.value);
+                }}
+                disabled={isSubmitting}
+              />
+            </label>
 
-            <div className={isCashAction ? "summary-tile modal-grid-span-2" : "summary-tile"}>
-              <span>{isCashAction ? "Cash movement" : "Estimated total"}</span>
+            <div className="summary-tile modal-grid-span-2">
+              <span>Cash movement</span>
               <strong>
-                {isCashAction && cashAmount !== null
-                  ? formatCurrency(cashAmount)
-                  : !isCashAction && calculatedTotal !== null
-                    ? formatCurrency(calculatedTotal)
-                    : "Enter values"}
+                {cashAmount !== null ? formatCurrency(cashAmount) : "Enter values"}
               </strong>
-              <p className="summary-detail">
-                {isCashAction
-                  ? "Amount will adjust available cash after the backend validates the request."
-                  : "Quantity multiplied by price. Holdings and cash will refresh after a successful trade."}
-              </p>
+              <p className="summary-detail">Amount will adjust available cash after the backend validates the request.</p>
             </div>
           </div>
 
+          {holdingsError ? <div className="form-error">{holdingsError}</div> : null}
           {formError ? <div className="form-error">{formError}</div> : null}
 
           <div className="modal-footer">
-            <p className="helper-text">User ID: {userId}. Requests are now sent to the backend API.</p>
-            <button className="primary-button" type="submit" disabled={isSubmitting}>
+            <p className="helper-text">User ID: {userId}. Deposit and withdraw stay on the dashboard.</p>
+            <button className={submitToneClass} type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Submitting..." : submitLabel}
             </button>
           </div>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { TradingViewMiniChart } from "../components/TradingViewMiniChart";
 import { WatchlistItemModal } from "../components/WatchlistItemModal";
 import {
   createWatchlistItem,
@@ -7,7 +8,8 @@ import {
   getUserWatchlist,
   updateWatchlistItem,
 } from "../lib/api";
-import { formatBackendDateTime, formatCurrency } from "../lib/format";
+import { formatBackendDateTime } from "../lib/format";
+import { buildTradingViewSymbol } from "../lib/tradingview";
 import { readWatchlistCache, writeWatchlistCache } from "../lib/watchlist-cache";
 import type { WatchlistItem, WatchlistItemRequest } from "../lib/types";
 
@@ -61,10 +63,7 @@ export function UserWatchlistPage() {
   }, [id]);
 
   const isModalOpen = modalMode !== null;
-  const pageDescription = useMemo(
-    () => "Track ideas, target buy prices, and alert thresholds before market-price integration lands.",
-    [],
-  );
+  const pageDescription = useMemo(() => "Track assets you want to watch and open a dedicated detail page to trade.", []);
 
   function openCreateModal() {
     setSelectedItem(undefined);
@@ -186,20 +185,7 @@ export function UserWatchlistPage() {
 
                 <p className="watchlist-notes">{item.notes || "—"}</p>
 
-                <dl className="watchlist-metrics">
-                  <div>
-                    <dt>Target Buy</dt>
-                    <dd>{item.targetBuyPrice !== null ? formatCurrency(item.targetBuyPrice) : "—"}</dd>
-                  </div>
-                  <div>
-                    <dt>Alert Low</dt>
-                    <dd>{item.alertPriceLow !== null ? formatCurrency(item.alertPriceLow) : "—"}</dd>
-                  </div>
-                  <div>
-                    <dt>Alert High</dt>
-                    <dd>{item.alertPriceHigh !== null ? formatCurrency(item.alertPriceHigh) : "—"}</dd>
-                  </div>
-                </dl>
+                <TradingViewMiniChart symbol={buildTradingViewSymbol(item)} title={item.ticker} />
 
                 <div className="watchlist-card-footer">
                   <p className="watchlist-updated">Updated {formatBackendDateTime(item.updatedAt)}</p>

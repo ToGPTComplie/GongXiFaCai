@@ -397,6 +397,30 @@ label,
   position: relative;
 }
 
+.holding-ticker-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.holding-detail-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(24, 34, 44, 0.06);
+  color: #51606d;
+  transition: transform 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+.holding-detail-link:hover {
+  transform: translateY(-1px);
+  background: #18222c;
+  color: #f8f4ed;
+}
+
 .table-refresh-indicator {
   position: absolute;
   top: 12px;
@@ -474,6 +498,46 @@ th {
   color: #f8f4ed;
 }
 
+.transaction-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+.transaction-action-button:hover {
+  transform: translateY(-1px);
+}
+
+.transaction-action-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+.transaction-action-button.positive {
+  background: #1d6f45;
+  color: #f6fffa;
+}
+
+.transaction-action-button.positive:hover {
+  background: #175b39;
+}
+
+.transaction-action-button.negative {
+  background: #a33434;
+  color: #fff7f7;
+}
+
+.transaction-action-button.negative:hover {
+  background: #8a2929;
+}
+
 .primary-button:hover,
 .ghost-button:hover {
   transform: translateY(-1px);
@@ -501,6 +565,30 @@ th {
 .text-link {
   color: #18222c;
   font-weight: 600;
+}
+
+.transaction-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 82px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.transaction-chip.positive {
+  background: rgba(29, 111, 69, 0.12);
+  color: #1d6f45;
+}
+
+.transaction-chip.negative {
+  background: rgba(163, 52, 52, 0.12);
+  color: #a33434;
 }
 
 .segmented-control {
@@ -908,6 +996,47 @@ th {
   margin: 0;
   color: #51606d;
   line-height: 1.6;
+}
+
+.watchlist-mini-chart {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(24, 34, 44, 0.08);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(248, 244, 237, 0.86) 100%);
+}
+
+.watchlist-mini-chart .tradingview-widget-container,
+.watchlist-mini-chart .tradingview-widget-container__widget,
+.watchlist-mini-chart tv-mini-chart {
+  width: 100%;
+}
+
+.watchlist-mini-chart tv-mini-chart {
+  display: block;
+  max-width: 100%;
+}
+
+.watchlist-mini-chart-fallback,
+.watchlist-mini-chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+  padding: 16px;
+  color: #60707e;
+  font-size: 14px;
+}
+
+.mini-chart-warmup-layer {
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
 }
 
 .watchlist-metrics {

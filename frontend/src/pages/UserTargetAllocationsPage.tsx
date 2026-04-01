@@ -76,6 +76,10 @@ function parsePercentInput(value: string) {
   return Number.isFinite(parsed) ? parsed : Number.NaN;
 }
 
+function getTransactionTone(transactionType: "BUY" | "SELL") {
+  return transactionType === "BUY" ? "positive" : "negative";
+}
+
 export function UserTargetAllocationsPage() {
   const { id = "1" } = useParams();
   const [rows, setRows] = useState<TargetAllocationRow[]>([]);
@@ -428,7 +432,11 @@ export function UserTargetAllocationsPage() {
               <tbody>
                 {previewPlans.map((plan) => (
                   <tr key={`${plan.transactionType}-${plan.ticker}`}>
-                    <td>{plan.transactionType}</td>
+                    <td>
+                      <span className={`transaction-chip ${getTransactionTone(plan.transactionType)}`}>
+                        {plan.transactionType}
+                      </span>
+                    </td>
                     <td>{plan.ticker}</td>
                     <td>{plan.assetType ?? "—"}</td>
                     <td>{formatCurrency(plan.marketPrice)}</td>
