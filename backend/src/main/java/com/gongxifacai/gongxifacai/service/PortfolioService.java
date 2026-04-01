@@ -18,9 +18,9 @@ public interface PortfolioService {
      */
     List<TradePlanDTO> previewRebalance(Long userId);
 
-    /**
-     * 实际执行再平衡
-     */
-    void executeRebalance(Long userId);
+    // /**
+    //  * 实际执行再平衡
+    //  */
+    // void executeRebalance(Long userId);
 
 }
