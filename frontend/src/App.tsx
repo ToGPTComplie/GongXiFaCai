@@ -82,7 +82,7 @@ export function AppShell() {
             }
             to={`/users/${id}/targets`}
           >
-            Targets
+            Rebalancing
           </Link>
         </nav>
       </aside>

@@ -704,6 +704,61 @@ th {
   position: relative;
 }
 
+.ticker-suggestion-list {
+  max-height: 240px;
+  overflow-y: auto;
+  margin-top: 12px;
+  padding: 6px;
+  border: 1px solid rgba(24, 34, 44, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 14px 28px rgba(24, 34, 44, 0.08);
+}
+
+.ticker-suggestion-item {
+  display: grid;
+  grid-template-columns: 32px 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: #18222c;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.ticker-suggestion-item:hover,
+.ticker-suggestion-item.is-selected {
+  background: rgba(24, 34, 44, 0.06);
+  transform: translateY(-1px);
+}
+
+.ticker-suggestion-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: rgba(24, 34, 44, 0.04);
+}
+
+.ticker-suggestion-symbol {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ticker-suggestion-name {
+  min-width: 0;
+  color: #60707e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .field-label {
   font-size: 13px;
   font-weight: 600;
