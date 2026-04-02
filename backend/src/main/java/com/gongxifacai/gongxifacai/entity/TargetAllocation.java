@@ -17,7 +17,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "targetAllocation")
+@Table(name = "target_allocation")
 public class TargetAllocation extends BaseEntity {
 
     @ManyToOne

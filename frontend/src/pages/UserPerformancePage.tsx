@@ -130,6 +130,9 @@ export function UserPerformancePage() {
     { label: "ALL", value: "ALL" },
   ];
 
+  const positiveGainers = (topBottom?.topGainers ?? []).filter((item) => item.totalRealizedPnl > 0);
+  const negativeLosers = (topBottom?.topLosers ?? []).filter((item) => item.totalRealizedPnl < 0);
+
   return (
     <div className="page-container">
       <header className="page-header">
@@ -270,13 +273,13 @@ export function UserPerformancePage() {
                 <span style={{ fontWeight: 700, fontSize: "0.95rem", color: "#15803d" }}>Top Gainers</span>
                 <span style={{ marginLeft: "auto", fontSize: "0.75rem", color: "#94a3b8" }}>Top 3</span>
               </div>
-              {topBottom.topGainers.length === 0 ? (
+              {positiveGainers.length === 0 ? (
                 <p style={{ color: "#94a3b8", fontSize: "0.875rem", textAlign: "center", padding: "1rem 0" }}>
                   No closed trades in this period
                 </p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {topBottom.topGainers.map((item, i) => (
+                  {positiveGainers.map((item, i) => (
                     <ClosedTradeRow key={item.ticker} item={item} rank={i + 1} />
                   ))}
                 </div>
@@ -293,13 +296,13 @@ export function UserPerformancePage() {
                 <span style={{ fontWeight: 700, fontSize: "0.95rem", color: "#b91c1c" }}>Top Losers</span>
                 <span style={{ marginLeft: "auto", fontSize: "0.75rem", color: "#94a3b8" }}>Top 3</span>
               </div>
-              {topBottom.topLosers.length === 0 ? (
+              {negativeLosers.length === 0 ? (
                 <p style={{ color: "#94a3b8", fontSize: "0.875rem", textAlign: "center", padding: "1rem 0" }}>
                   No closed trades in this period
                 </p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {topBottom.topLosers.map((item, i) => (
+                  {negativeLosers.map((item, i) => (
                     <ClosedTradeRow key={item.ticker} item={item} rank={i + 1} />
                   ))}
                 </div>
