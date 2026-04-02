@@ -240,6 +240,11 @@ label,
   color: #60707e;
 }
 
+.greeting-name {
+  color: #18222c;
+  font-weight: 700;
+}
+
 .card-footnote {
   margin: 10px 0 0;
   color: #7b6751;

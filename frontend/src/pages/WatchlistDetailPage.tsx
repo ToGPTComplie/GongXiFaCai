@@ -20,11 +20,11 @@ function sortWatchlist(items: WatchlistItem[]) {
 }
 
 export function WatchlistDetailPage() {
-  const { id = "1", watchlistItemId = "" } = useParams();
-  const parsedItemId = Number(watchlistItemId);
+  const { id = "1", ticker = "" } = useParams();
+  const normalizedTicker = decodeURIComponent(ticker).trim().toUpperCase();
   const [item, setItem] = useState<WatchlistItem | null>(() => {
     const cachedItems = readWatchlistCache(id);
-    return cachedItems?.find((entry) => entry.id === parsedItemId) ?? null;
+    return cachedItems?.find((entry) => entry.ticker.trim().toUpperCase() === normalizedTicker) ?? null;
   });
   const [error, setError] = useState<string | null>(null);
   const [contentPhase, setContentPhase] = useState<"idle" | "updating">("idle");
@@ -39,14 +39,14 @@ export function WatchlistDetailPage() {
 
   useEffect(() => {
     const cachedItems = readWatchlistCache(id);
-    const cachedItem = cachedItems?.find((entry) => entry.id === parsedItemId) ?? null;
+    const cachedItem = cachedItems?.find((entry) => entry.ticker.trim().toUpperCase() === normalizedTicker) ?? null;
     const controller = new AbortController();
 
     setItem(cachedItem);
     setError(null);
 
     async function loadWatchlistItem() {
-      if (!Number.isInteger(parsedItemId) || parsedItemId <= 0) {
+      if (!normalizedTicker) {
         setError("Invalid watchlist item");
         return;
       }
@@ -56,7 +56,7 @@ export function WatchlistDetailPage() {
       try {
         const result = sortWatchlist(await getUserWatchlist(id, controller.signal));
         writeWatchlistCache(id, result);
-        const matchedItem = result.find((entry) => entry.id === parsedItemId) ?? null;
+        const matchedItem = result.find((entry) => entry.ticker.trim().toUpperCase() === normalizedTicker) ?? null;
         setItem(matchedItem);
         setContentPhase("idle");
 
@@ -76,7 +76,7 @@ export function WatchlistDetailPage() {
     return () => {
       controller.abort();
     };
-  }, [id, parsedItemId]);
+  }, [id, normalizedTicker]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -255,10 +255,6 @@ export function WatchlistDetailPage() {
           <div>
             <dt>Holding Qty</dt>
             <dd>{currentHolding ? currentHolding.quantity : "—"}</dd>
-          </div>
-          <div>
-            <dt>Refresh</dt>
-            <dd>Every 5s</dd>
           </div>
           <div>
             <dt>Updated</dt>
