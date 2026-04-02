@@ -6,6 +6,7 @@ import com.gongxifacai.gongxifacai.dto.PerformanceSummaryDTO;
 import com.gongxifacai.gongxifacai.dto.PortfolioPerformanceDTO;
 import com.gongxifacai.gongxifacai.dto.RiskAnalysisResultDTO;
 import com.gongxifacai.gongxifacai.dto.TargetAllocationDTO;
+import com.gongxifacai.gongxifacai.dto.TopBottomClosedTradesDTO;
 import com.gongxifacai.gongxifacai.dto.TradePlanDTO;
 import com.gongxifacai.gongxifacai.entity.TargetAllocation;
 import com.gongxifacai.gongxifacai.scheduler.MarketCloseScheduler;
@@ -117,5 +118,18 @@ public class PortfolioController {
             @PathVariable("id") Long userId,
             @RequestParam PerformancePeriod period) {
         return Result.success(performanceService.getPerformanceSummary(userId, period));
+    }
+
+    /**
+     * 查询用户在指定时间段内按标的聚合的 Top Gainers / Top Losers（已平仓）
+     * GET /api/v1/users/{id}/portfolio/performance/top-bottom?period=D30
+     *
+     * @param period H24 | D7 | D30 | D90 | YTD | ALL
+     */
+    @GetMapping("/{id}/portfolio/performance/top-bottom")
+    public Result<TopBottomClosedTradesDTO> getTopBottomClosedTrades(
+            @PathVariable("id") Long userId,
+            @RequestParam PerformancePeriod period) {
+        return Result.success(performanceService.getTopBottomClosedTrades(userId, period));
     }
 }

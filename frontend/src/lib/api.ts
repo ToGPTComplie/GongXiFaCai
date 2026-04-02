@@ -18,6 +18,9 @@ import type {
   PerformanceSummaryDTO,
   PortfolioPerformanceDTO,
   RiskAnalysisResultDTO,
+  TopBottomHoldingsDTO,
+  TopBottomClosedTradesDTO,
+  TickerPnlDTO,
 } from "./types";
 
 const mockPortfolio: UserPortfolio = {
@@ -296,3 +299,19 @@ export async function getPortfolioPerformance(
 export async function getRiskAnalysis(userId: string, signal?: AbortSignal): Promise<RiskAnalysisResultDTO> {
   return apiGet<RiskAnalysisResultDTO>(`/api/v1/users/${userId}/portfolio/risk-analysis`, signal);
 }
+
+export async function getTopBottomHoldings(userId: string, signal?: AbortSignal): Promise<TopBottomHoldingsDTO> {
+  return apiGet<TopBottomHoldingsDTO>(`/api/v1/users/${userId}/holdings/top-bottom`, signal);
+}
+
+export async function getTopBottomClosedTrades(
+  userId: string,
+  period: PerformancePeriod,
+  signal?: AbortSignal,
+): Promise<TopBottomClosedTradesDTO> {
+  return apiGet<TopBottomClosedTradesDTO>(
+    `/api/v1/users/${userId}/portfolio/performance/top-bottom?period=${period}`,
+    signal,
+  );
+}
+
