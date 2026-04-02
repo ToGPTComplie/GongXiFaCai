@@ -3,6 +3,8 @@ package com.gongxifacai.gongxifacai.service.impl;
 import com.gongxifacai.gongxifacai.common.CommonErrorCode;
 import com.gongxifacai.gongxifacai.dto.PerformancePeriod;
 import com.gongxifacai.gongxifacai.dto.PerformanceSummaryDTO;
+import com.gongxifacai.gongxifacai.dto.TickerPnlDTO;
+import com.gongxifacai.gongxifacai.dto.TopBottomClosedTradesDTO;
 import com.gongxifacai.gongxifacai.entity.TradeTransaction;
 import com.gongxifacai.gongxifacai.exception.BusinessException;
 import com.gongxifacai.gongxifacai.repository.TradeTransactionRepository;
@@ -44,6 +46,42 @@ public class PerformanceServiceImpl implements PerformanceService {
         dto.setProfitFactor(calcProfitFactor(sells));
         dto.setAvgHoldingDays(calcAvgHoldingDays(userId, sells));
         return dto;
+    }
+
+    @Override
+    public TopBottomClosedTradesDTO getTopBottomClosedTrades(Long userId, PerformancePeriod period) {
+        if (!userService.existsById(userId)) {
+            throw new BusinessException(CommonErrorCode.USER_NOT_FOUND);
+        }
+
+        List<TradeTransaction> sells = loadSells(userId, period);
+
+        // 按 ticker 聚合：SUM(realizedPnl) 和笔数
+        Map<String, List<TradeTransaction>> byTicker = sells.stream()
+                .collect(Collectors.groupingBy(TradeTransaction::getTicker));
+
+        List<TickerPnlDTO> aggregated = byTicker.entrySet().stream()
+                .map(e -> {
+                    BigDecimal total = e.getValue().stream()
+                            .map(TradeTransaction::getRealizedPnl)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    return new TickerPnlDTO(e.getKey(), total, e.getValue().size());
+                })
+                .collect(Collectors.toList());
+
+        // Top 3 盈利：降序取前 3
+        List<TickerPnlDTO> topGainers = aggregated.stream()
+                .sorted(Comparator.comparing(TickerPnlDTO::getTotalRealizedPnl).reversed())
+                .limit(3)
+                .collect(Collectors.toList());
+
+        // Top 3 亏损：升序取前 3
+        List<TickerPnlDTO> topLosers = aggregated.stream()
+                .sorted(Comparator.comparing(TickerPnlDTO::getTotalRealizedPnl))
+                .limit(3)
+                .collect(Collectors.toList());
+
+        return new TopBottomClosedTradesDTO(topGainers, topLosers);
     }
 
     // ───────────────── 私有辅助方法 ─────────────────

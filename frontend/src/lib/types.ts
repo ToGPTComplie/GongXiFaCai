@@ -207,3 +207,30 @@ export interface RiskAnalysisResultDTO {
   sectorConcentration: SectorConcentrationDTO;
   cashRatio: RiskDimensionDTO;
 }
+
+export interface HoldingDTO {
+  id: number;
+  ticker: string;
+  assetType: "STOCK" | "BOND";
+  quantity: number;
+  averageCost: number;
+  marketValue: number | null;
+  pl: number | null;
+}
+
+export interface TopBottomHoldingsDTO {
+  topProfitable: HoldingDTO[];
+  topLosing: HoldingDTO[];
+}
+
+export interface TickerPnlDTO {
+  ticker: string;
+  totalRealizedPnl: number;
+  tradeCount: number;
+}
+
+export interface TopBottomClosedTradesDTO {
+  topGainers: TickerPnlDTO[];
+  topLosers: TickerPnlDTO[];
+}
+
