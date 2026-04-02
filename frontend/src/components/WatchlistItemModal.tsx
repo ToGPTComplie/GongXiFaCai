@@ -34,7 +34,19 @@ export function WatchlistItemModal({
 
   const title = useMemo(() => (mode === "create" ? "Add watchlist item" : "Edit watchlist item"), [mode]);
   const isEditMode = mode === "edit";
-  const suggestions = useMemo(() => (isEditMode ? [] : searchNasdaqSecurities(ticker)), [isEditMode, ticker]);
+  const suggestions = useMemo(() => {
+    if (isEditMode) {
+      return [];
+    }
+
+    const normalizedTicker = ticker.trim().toUpperCase();
+
+    if (selectedSymbol && normalizedTicker === selectedSymbol) {
+      return [];
+    }
+
+    return searchNasdaqSecurities(ticker);
+  }, [isEditMode, selectedSymbol, ticker]);
   const selectedSecurity = useMemo(() => {
     if (selectedSymbol) {
       return findNasdaqSecurityBySymbol(selectedSymbol);

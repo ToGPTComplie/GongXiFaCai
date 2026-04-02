@@ -770,6 +770,42 @@ th {
   color: #3d4a56;
 }
 
+.field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sell-max-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border: 1px solid rgba(24, 34, 44, 0.12);
+  border-radius: 999px;
+  background: rgba(24, 34, 44, 0.04);
+  color: #3d4a56;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.sell-max-button:hover {
+  background: #18222c;
+  color: #f8f4ed;
+  transform: translateY(-1px);
+}
+
+.sell-max-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+}
+
 .modal-grid-span-2 {
   grid-column: span 2;
 }
@@ -799,6 +835,16 @@ th {
   outline: none;
   border-color: rgba(210, 143, 55, 0.9);
   box-shadow: 0 0 0 4px rgba(210, 143, 55, 0.14);
+}
+
+.modal-grid input[type="number"]::-webkit-outer-spin-button,
+.modal-grid input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.modal-grid input[type="number"] {
+  -moz-appearance: textfield;
 }
 
 .custom-select {

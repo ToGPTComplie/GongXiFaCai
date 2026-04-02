@@ -314,7 +314,23 @@ export function WatchlistDetailPage() {
             <p className="summary-detail">Current market price fetched from the backend.</p>
           </div>
           <label className="field-group modal-grid-span-2">
-            <span className="field-label">Quantity</span>
+            <div className="field-label-row">
+              <span className="field-label">Quantity</span>
+              {tradeMode === "SELL" && currentHolding ? (
+                <button
+                  className="sell-max-button"
+                  type="button"
+                  onClick={() => {
+                    setTradeError(null);
+                    setTradeMessage(null);
+                    setTradeQuantity(String(currentHolding.quantity));
+                  }}
+                  disabled={isSubmittingTrade}
+                >
+                  Sell Max
+                </button>
+              ) : null}
+            </div>
             <input
               className="text-input"
               placeholder="10"
@@ -322,6 +338,9 @@ export function WatchlistDetailPage() {
               min="0"
               step="0.0001"
               value={tradeQuantity}
+              onWheel={(event) => {
+                event.currentTarget.blur();
+              }}
               onChange={(event) => {
                 setTradeError(null);
                 setTradeMessage(null);
