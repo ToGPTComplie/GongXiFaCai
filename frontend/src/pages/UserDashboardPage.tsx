@@ -8,12 +8,35 @@ import { readWatchlistCache, subscribeWatchlistCache, writeWatchlistCache } from
 import type { Holding, HoldingRow, LiveHoldingSnapshot, UserInfo, UserPortfolio, WatchlistItem } from "../lib/types";
 
 const portfolioCache = new Map<string, UserPortfolio>();
+const dashboardGreetings = [
+  "Welcome back, {name}. Your portfolio is ready when you are.",
+  "Good to see you again, {name}. Let's check how your positions are doing.",
+  "Hi {name}, your portfolio snapshot is looking sharp today.",
+  "{name}, everything is in place. Let's take a look at your holdings.",
+];
 
-function buildPortfolioModel(userInfo: UserInfo, holdings: Holding[], liveHoldings: LiveHoldingSnapshot[] = []): UserPortfolio {
+function buildPortfolioModel(
+  userInfo: UserInfo,
+  holdings: Holding[],
+  liveHoldings: LiveHoldingSnapshot[] = [],
+  previousPortfolio: UserPortfolio | null = null,
+): UserPortfolio {
   const liveHoldingsByTicker = new Map(liveHoldings.map((holding) => [holding.ticker, holding]));
+  const previousLiveByTicker = new Map(
+    (previousPortfolio?.holdings ?? [])
+      .filter((holding) => holding.marketValue !== null || holding.pl !== null)
+      .map((holding) => [
+        holding.ticker,
+        {
+          marketValue: holding.marketValue ?? null,
+          pl: holding.pl ?? null,
+        },
+      ]),
+  );
 
   const holdingsRows: HoldingRow[] = holdings.map((holding) => {
     const liveHolding = liveHoldingsByTicker.get(holding.ticker);
+    const previousLive = previousLiveByTicker.get(holding.ticker);
 
     return {
       id: holding.id,
@@ -22,8 +45,8 @@ function buildPortfolioModel(userInfo: UserInfo, holdings: Holding[], liveHoldin
       quantity: holding.quantity,
       averageCost: holding.averageCost,
       positionCost: holding.quantity * holding.averageCost,
-      marketValue: liveHolding?.marketValue ?? null,
-      pl: liveHolding?.pl ?? null,
+      marketValue: liveHolding?.marketValue ?? previousLive?.marketValue ?? null,
+      pl: liveHolding?.pl ?? previousLive?.pl ?? null,
     };
   });
 
@@ -119,7 +142,7 @@ export function UserDashboardPage() {
           getUserHoldings(id, controller.signal),
         ]);
 
-        const nextPortfolio = buildPortfolioModel(userInfo, holdings);
+        const nextPortfolio = buildPortfolioModel(userInfo, holdings, [], cachedPortfolio);
         portfolioCache.set(id, nextPortfolio);
         setPortfolio(nextPortfolio);
         setContentPhase("idle");
@@ -175,6 +198,7 @@ export function UserDashboardPage() {
             },
             baseHoldings,
             liveHoldings,
+            current,
           );
 
           portfolioCache.set(id, nextPortfolio);
@@ -214,13 +238,15 @@ export function UserDashboardPage() {
   const watchlistByTicker = new Map(
     watchlistItems.map((item) => [`${item.ticker.trim().toUpperCase()}-${item.assetType}`, item]),
   );
+  const greetingTemplate = dashboardGreetings[portfolio.id % dashboardGreetings.length];
+  const greetingParts = greetingTemplate.split("{name}");
 
   async function handleOpenHoldingDetail(holding: HoldingRow) {
     const key = `${holding.ticker.trim().toUpperCase()}-${holding.assetType}`;
     const existingItem = watchlistByTicker.get(key);
 
     if (existingItem) {
-      navigate(`/users/${id}/watchlist/${existingItem.id}`);
+      navigate(`/users/${id}/watchlist/${encodeURIComponent(existingItem.ticker)}`);
       return;
     }
 
@@ -234,7 +260,7 @@ export function UserDashboardPage() {
       const nextItems = [createdItem, ...watchlistItems];
       writeWatchlistCache(id, nextItems);
       setWatchlistItems(nextItems);
-      navigate(`/users/${id}/watchlist/${createdItem.id}`);
+      navigate(`/users/${id}/watchlist/${encodeURIComponent(createdItem.ticker)}`);
     } catch (openError) {
       setError(openError instanceof Error ? openError.message : "Failed to open holding detail");
     } finally {
@@ -248,7 +274,11 @@ export function UserDashboardPage() {
         <div>
           <p className="eyebrow">User Portfolio</p>
           <h2>{portfolio.name}</h2>
-          <p className="subtle-text">User ID {portfolio.id} · Holdings and cash are live from the backend</p>
+          <p className="subtle-text">
+            {greetingParts[0]}
+            <span className="greeting-name">{portfolio.name}</span>
+            {greetingParts[1] ?? ""}
+          </p>
         </div>
         <Link className="primary-button" to={`/users/${id}?modal=transaction`}>
           New Transaction
@@ -337,7 +367,7 @@ export function UserDashboardPage() {
                           {watchlistItem ? (
                             <Link
                               className="holding-detail-link"
-                              to={`/users/${id}/watchlist/${watchlistItem.id}`}
+                              to={`/users/${id}/watchlist/${encodeURIComponent(watchlistItem.ticker)}`}
                               aria-label={`Open ${holding.ticker} detail page`}
                               title={`Open ${holding.ticker} detail page`}
                             >

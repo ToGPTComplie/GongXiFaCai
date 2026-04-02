@@ -189,8 +189,11 @@ export function UserWatchlistPage() {
 
                 <div className="watchlist-card-footer">
                   <p className="watchlist-updated">Updated {formatBackendDateTime(item.updatedAt)}</p>
-                  <Link className="primary-button watchlist-detail-button" to={`/users/${id}/watchlist/${item.id}`}>
-                    View Details
+                  <Link
+                    className="primary-button watchlist-detail-button"
+                    to={`/users/${id}/watchlist/${encodeURIComponent(item.ticker)}`}
+                  >
+                    Trade
                   </Link>
                 </div>
               </article>

@@ -29,7 +29,7 @@ export const router = createBrowserRouter([
         element: <UserWatchlistPage />,
       },
       {
-        path: "watchlist/:watchlistItemId",
+        path: "watchlist/:ticker",
         element: <WatchlistDetailPage />,
       },
       {
